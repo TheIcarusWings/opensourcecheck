@@ -26,19 +26,20 @@
       "summary": "BIP-39 seed generation draws from a software PRNG instead of the STM32 hardware TRNG. The board file stm32/COLDCARD/rng.c exports the hardware reader only as static rng_get_or_fault() and never defines a global rng_get(); the linker therefore resolves rng_get() to MicroPython's upstream ports/stm32/rng.c, whose implementation falls back to the Yasmarang software PRNG (pyb_rng_yasmarang). Seed material generated via ngu.random (shared/seed.py:605 `seed = ngu.random.bytes(32)`) is thereby drawn from a weak PRNG, cutting effective Mk2/Mk3 seed entropy from 128 bits to ~40 bits (brute-forceable). Confirmed by the fix commit ca724637, which adds a board-level rng_get() wrapping the TRNG, poisons pyb_rng_yasmarang, and adds an arm-none-eabi-nm build-time symbol check asserting the correct rng_get is linked.",
       "location": "stm32/COLDCARD/rng.c (missing global rng_get); consumer shared/seed.py:605",
       "cwe": "CWE-338",
-      "validator": "opensourcecheck-demo",
-      "validator_notes": "Validated against source: read the fix diff ca72463709f4e3f8964952039d5caf955f566a87 and the pre-fix tree bcc2c382a324690a2fcf972c0bac3b79bf923f7b. Consistent with Coinkite's advisory (2026-07-31) and Block Engineering's independent analysis. Signature is the repository demo key (not a trusted identity) — data is real and reproducible; a named auditor should re-sign. See transcripts/OSC-2026-0001.md for full reproduction steps."
+      "validator": "theicaruswings",
+      "validator_notes": "Validated against source: read the fix diff ca72463709f4e3f8964952039d5caf955f566a87 and the pre-fix tree bcc2c382a324690a2fcf972c0bac3b79bf923f7b. Consistent with Coinkite's advisory (2026-07-31) and Block Engineering's independent analysis. See transcripts/OSC-2026-0001.md for full reproduction steps."
     }
   ],
   "verdict": "findings-validated",
   "auditor": {
-    "id": "opensourcecheck-demo",
-    "name": "OpenSourceCheck Demo Key",
-    "contact": "demo@opensourcecheck.org"
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
   },
   "signature": {
     "alg": "nostr-schnorr",
-    "principal": "npub1n9mgw84wlks5vnwm2r32jaq5nlnwcjeveae0jeqjnfzcdy8ezlrsll2tdd",
-    "value": "fbe49a15b687f073513b9cdb2722d6bd61f8c807287a2b5f567e480c37724fa6074f3abd0d3febb74352ee438ec17080f4c9129566652e25dc8c7346dd3104c6"
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "9c0d4a5e0839eb3fe7c27fb1897317f6b700d1c96615914e5fd04d367ba36cf40d483fb0e4806286b0776cff5c73c5055036dda56fde9bb9bda89183971b3989"
   }
 }

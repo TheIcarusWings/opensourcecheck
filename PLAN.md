@@ -113,11 +113,19 @@ Design decisions baked into the schema:
   that would have made Coinkite's pre-hack audit auditable after the fact.
 - **`status` requires a human.** Raw model output is never published as a finding; a named,
   key-holding validator triages first. This is the anti-slop gate curl never had.
-- **Signing: Nostr schnorr signatures (secp256k1) — the same key signs the attestation and
-  publishes it on Nostr, unifying layers 1 and 3.** BIP-340 schnorr over secp256k1, the
-  Bitcoin/Nostr curve — culturally native to Bitcoin and avoids a second identity system.
-  The signer's npub is cross-checked out-of-band via their Nostr profile / a NIP-05. Avoid
-  PGP-only (adoption killer). CI verifies signatures on every PR.
+- **Signing: signer's choice of a Nostr, SSH, or PGP key, all binding the same canonical
+  payload.** `signature.alg` is one of `nostr-schnorr` (BIP-340 schnorr/secp256k1),
+  `ssh-ed25519` (OpenSSH signature via `ssh-keygen -Y`), or `pgp` (OpenPGP detached signature
+  via `gpg`) — the auditor picks whichever key they already hold and registers it under
+  `auditors/`. All three sign `"osc-attestation/v0\n" + canonical-json` (Nostr signs its
+  sha256 digest; SSH/PGP sign the payload directly, since they hash internally). Nostr
+  remains the culturally-default choice — the same key signs the attestation and publishes
+  it on Nostr, unifying layers 1 and 3, BIP-340 schnorr over secp256k1 being the
+  Bitcoin/Nostr curve — but SSH and PGP mean an auditor isn't forced to mint a new identity
+  just to participate; they can sign with a key they already use and have published
+  elsewhere. Each signer's key is cross-checked out-of-band per scheme (Nostr profile/NIP-05,
+  `github.com/<user>.keys`, or a keyserver). CI verifies signatures of any of the three
+  algorithms on every PR.
 
 ### Responsible disclosure — the non-negotiable rule
 

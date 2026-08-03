@@ -1,29 +1,29 @@
 #!/usr/bin/env node
 // osc — the OpenSourceCheck attestation tool.
-// Signs and verifies attestations with a Nostr key (BIP-340 schnorr / secp256k1 — the
-// Bitcoin/Nostr curve). Identity is your npub. Verification is fully offline and trusts
-// no server. Requires Node >= 18 and one `npm install` (@noble/curves, @scure/base).
+// Signs and verifies attestations with the key you already have: a Nostr key (BIP-340
+// schnorr / secp256k1), an SSH key (ssh-keygen), or a PGP key (gpg). Verification is fully
+// offline and trusts no server. Requires Node >= 18 and one `npm install` (@noble/curves,
+// @scure/base); ssh/pgp verification additionally shell out to ssh-keygen / gpg.
 //
 // Commands:
 //   osc new-run                          scaffold a blank attestation to stdout
 //   osc canonicalize <file>              print the canonical bytes that get signed
-//   osc digest <file>                    print the sha256 digest that gets schnorr-signed
+//   osc digest <file>                    print the sha256 digest (nostr signs this)
 //   osc hash <file>                      print sha256 of a file (transcript_sha256 / body_sha256)
 //   osc keygen                           generate a fresh Nostr keypair (nsec + npub)
-//   osc sign <file> [--nsec N | --key F] sign in place with a Nostr secret (nsec/hex, or a file / $OSC_NSEC)
-//   osc verify <file>                    verify one attestation (structure + signature)
-//   osc verify --all                     verify every attestation under attestations/
+//   osc sign <file> …                    sign in place; scheme chosen by flags:
+//                                          nostr: --nsec N | --key F | $OSC_NSEC
+//                                          ssh:   --ssh-key F --principal ID
+//                                          pgp:   --pgp [--gpg-key K]
+//   osc verify <file> | --all            verify attestation(s) (structure + signature)
 
 import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { createHash, randomBytes } from "node:crypto";
 import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bech32 } from "@scure/base";
-import {
-  canonicalize, SIG_ALG,
-  npubToHex, hexToNpub, decodeSecret, pubkeyHexFromSecret,
-  signAttestation, verifyAttestationSig,
-} from "../lib/nostr.mjs";
+import { canonicalize, hexToNpub, decodeSecret, pubkeyHexFromSecret } from "../lib/nostr.mjs";
+import { signAttestation, verifyAttestation } from "../lib/schemes.mjs";
 
 const SCHEMA_ID = "osc-attestation/v0";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -80,18 +80,27 @@ function validateStructure(a) {
   req(typeof au.name === "string" && au.name.length > 0, "auditor.name required");
 
   const s = a.signature || {};
-  req(s.alg === SIG_ALG, `signature.alg must be ${SIG_ALG}`);
-  req(/^npub1[a-z0-9]{58,}$/.test(s.principal || ""), "signature.principal must be an npub");
-  req(/^[0-9a-f]{128}$/.test(s.value || ""), "signature.value must be a 128-hex schnorr signature");
+  const ALGS = ["nostr-schnorr", "ssh-ed25519", "pgp"];
+  req(ALGS.includes(s.alg), `signature.alg must be one of ${ALGS.join(", ")}`);
+  req(typeof s.principal === "string" && s.principal.length > 0, "signature.principal required");
+  req(typeof s.value === "string" && s.value.length > 0, "signature.value required");
+  if (s.alg === "nostr-schnorr") {
+    req(/^npub1[a-z0-9]{58,}$/.test(s.principal || ""), "nostr principal must be an npub");
+    req(/^[0-9a-f]{128}$/.test(s.value || ""), "nostr value must be a 128-hex schnorr signature");
+  } else if (s.alg === "ssh-ed25519") {
+    req(/BEGIN SSH SIGNATURE/.test(s.value || ""), "ssh value must be an armored SSH signature");
+  } else if (s.alg === "pgp") {
+    req(/^[0-9A-Fa-f]{16,40}$/.test(s.principal || ""), "pgp principal must be a hex key fingerprint / long id");
+    req(/BEGIN PGP SIGNATURE/.test(s.value || ""), "pgp value must be an armored PGP signature");
+  }
 
   return errs;
 }
 
 // ---------- auditor registry ----------
-function loadAuditorNpubs(auditorId) {
+function loadAuditorKeys(auditorId) {
   const p = join(REPO_ROOT, "auditors", auditorId + ".json");
-  const auditor = JSON.parse(readFileSync(p, "utf8"));
-  return (auditor.keys || []).map((k) => k.npub);
+  return JSON.parse(readFileSync(p, "utf8")).keys || [];
 }
 
 function verifyFile(path) {
@@ -99,14 +108,11 @@ function verifyFile(path) {
   const structErrs = validateStructure(att);
   if (structErrs.length) return { path, ok: false, errors: structErrs };
 
-  // principal must be registered for this auditor
-  let registered;
-  try { registered = loadAuditorNpubs(att.auditor.id); }
+  let keys;
+  try { keys = loadAuditorKeys(att.auditor.id); }
   catch { return { path, ok: false, errors: [`auditor ${att.auditor.id} has no auditors/${att.auditor.id}.json`] }; }
-  if (!registered.includes(att.signature.principal))
-    return { path, ok: false, errors: [`principal ${att.signature.principal} not registered for auditor ${att.auditor.id}`] };
 
-  const sig = verifyAttestationSig(att);
+  const sig = verifyAttestation(att, keys);
   return sig.ok ? { path, ok: true, errors: [] } : { path, ok: false, errors: [sig.reason] };
 }
 
@@ -143,7 +149,7 @@ function scaffold() {
     ],
     verdict: "clean-run",
     auditor: { id: "your-slug", name: "Your Name", npub: "npub1..." },
-    signature: { alg: SIG_ALG, principal: "npub1...", value: "<run: osc sign>" },
+    signature: { alg: "nostr-schnorr", principal: "npub1...", value: "<run: osc sign>" },
   };
 }
 
@@ -202,13 +208,21 @@ function main() {
 
     case "sign": {
       const file = positional[0];
-      if (!file) { console.error("usage: osc sign <file> [--nsec <nsec1…> | --key <file>]"); process.exit(2); }
-      const att = JSON.parse(readFileSync(file, "utf8"));
-      const { signature, ...unsigned } = att;
-      const sk = resolveSecret(flags);
-      const signed = signAttestation(unsigned, sk);
-      writeFileSync(file, JSON.stringify(signed, null, 2) + "\n");
-      console.error(`signed ${file} as ${signed.signature.principal}`);
+      if (!file) {
+        console.error("usage: osc sign <file>\n" +
+          "  nostr: --nsec <nsec1…> | --key <file> | $OSC_NSEC\n" +
+          "  ssh:   --ssh-key <path> --principal <identity>\n" +
+          "  pgp:   --pgp [--gpg-key <keyid>]");
+        process.exit(2);
+      }
+      const { signature, ...unsigned } = JSON.parse(readFileSync(file, "utf8"));
+      let opts;
+      if (flags["ssh-key"]) opts = { scheme: "ssh", sshKey: flags["ssh-key"], principal: flags.principal !== true ? flags.principal : undefined };
+      else if (flags.pgp || flags["gpg-key"]) opts = { scheme: "pgp", gpgKey: flags["gpg-key"] !== true ? flags["gpg-key"] : undefined };
+      else opts = { scheme: "nostr", secret: resolveSecret(flags) };
+      const sig = signAttestation(unsigned, opts);
+      writeFileSync(file, JSON.stringify({ ...unsigned, signature: sig }, null, 2) + "\n");
+      console.error(`signed ${file} as ${sig.alg} ${sig.principal}`);
       break;
     }
 

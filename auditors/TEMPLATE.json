@@ -3,7 +3,9 @@
   "name": "Your Name or Handle",
   "contact": "optional: URL, NIP-05, or handle for disclosure coordination",
   "keys": [
-    { "npub": "npub1... your Nostr public key (NIP-19)" }
+    { "type": "nostr", "npub": "npub1... your Nostr public key (NIP-19)" },
+    { "type": "ssh", "principal": "you@example.com", "ssh_key": "ssh-ed25519 AAAA... (contents of your ~/.ssh/id_ed25519.pub, key type + base64 only)" },
+    { "type": "pgp", "fingerprint": "0123456789ABCDEF0123456789ABCDEF01234567", "public_key": "-----BEGIN PGP PUBLIC KEY BLOCK-----\n... armored public key ...\n-----END PGP PUBLIC KEY BLOCK-----\n" }
   ],
-  "note": "Copy this to auditors/<your-slug>.json, fill it in, delete this note. Sign attestations with the matching nsec: `osc sign <file> --nsec nsec1...` (or --key <file>, or $OSC_NSEC). You may list multiple npubs for key rotation. Publish the same key in your Nostr profile / a NIP-05 so others can cross-check your identity out of band."
+  "note": "Copy this to auditors/<your-slug>.json, keep ONLY the key type(s) you will actually sign with, and delete this note. Sign with:  nostr -> `osc sign <f> --nsec nsec1...` ;  ssh -> `osc sign <f> --ssh-key ~/.ssh/id_ed25519 --principal you@example.com` ;  pgp -> `osc sign <f> --pgp [--gpg-key <keyid>]`. `type` is optional (inferred from the fields). List multiple entries for rotation or to support more than one scheme. Publish the same key(s) somewhere public (Nostr profile / NIP-05, github.com/<user>.keys, a keyserver) so others can cross-check your identity out of band."
 }

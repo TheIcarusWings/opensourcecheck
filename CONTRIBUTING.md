@@ -10,7 +10,9 @@ you find something real. Read [PLAN.md](./PLAN.md) for the full rationale if you
 ### 1. Scaffold a new run
 
 The `osc` CLI has one audited crypto dependency (`@noble/curves`, `@scure/base` — used for
-Nostr signing). Install it once at the repo root before running any `osc` command:
+Nostr signing and verification). SSH and PGP signing/verification instead shell out to the
+standard `ssh-keygen` and `gpg` tools, so make sure whichever you plan to use is installed.
+Install the npm dependency once at the repo root before running any `osc` command:
 
 ```bash
 npm ci
@@ -84,8 +86,13 @@ enforce that a clean run is recorded explicitly rather than omitted.
 "auditor": { "id": "your-slug", "name": "Your Name", "contact": "you@example.com" }
 ```
 
-`auditor.id` must match a file you create at `auditors/<your-slug>.json` (see below). If you
-don't have a Nostr key yet, generate one:
+`auditor.id` must match a file you create at `auditors/<your-slug>.json` (see below). Sign
+the attestation with whichever key type you register there — **Nostr, SSH, or PGP, your
+choice**. All three bind the same canonicalized payload (RFC 8785 JCS, `signature` field
+excluded): `"osc-attestation/v0\n" + canonical-json`. Nostr signs the sha256 digest of that
+payload; SSH and PGP sign the payload directly (they hash internally).
+
+**Nostr.** If you don't have a key yet, generate one:
 
 ```bash
 npm ci
@@ -99,19 +106,40 @@ keep it private). Then sign:
 node tools/osc/osc.mjs sign my-run.json --nsec nsec1...
 ```
 
-(or `--key <file containing the nsec>`, or set `$OSC_NSEC`). This canonicalizes the
-attestation (RFC 8785 JCS, `signature` field excluded), computes
-`sha256("osc-attestation/v0\n" + canonical-json)`, signs that digest with a BIP-340 schnorr
-signature over secp256k1, and writes the signed `signature` block — `alg: "nostr-schnorr"`,
-`principal: "<your npub>"`, `value: "<128-hex signature>"` — back into the file in place.
-There is no `--principal` flag: the npub is derived from the key you sign with, and it must
-be one of the `npub`s you register in your auditor file (see next section).
+(or `--key <file containing the nsec>`, or set `$OSC_NSEC`). This writes the signed
+`signature` block — `alg: "nostr-schnorr"`, `principal: "<your npub>"`, `value: "<128-hex
+schnorr signature>"` — back into the file in place. There is no `--principal` flag for
+Nostr: the npub is derived from the key you sign with, and it must be one of the `npub`s you
+register in your auditor file (see next section).
+
+**SSH.** Sign with an existing SSH key via `ssh-keygen -Y sign`:
+
+```bash
+node tools/osc/osc.mjs sign my-run.json --ssh-key ~/.ssh/id_ed25519 --principal you@example.com
+```
+
+`--principal` is an identity string of your choosing (an email works well) — it must match
+the `principal` you register for this key in your auditor file exactly. This writes `alg:
+"ssh-ed25519"`, your `principal`, and an armored SSHSIG block as `value`.
+
+**PGP.** Sign with `gpg`:
+
+```bash
+node tools/osc/osc.mjs sign my-run.json --pgp [--gpg-key <keyid>]
+```
+
+`--gpg-key` selects a specific key (`gpg --local-user <keyid>`); omit it to sign with your
+default key. This writes `alg: "pgp"`, `principal: "<your 40-hex key fingerprint>"`, and an
+armored PGP signature block as `value`.
+
+Whichever scheme you use, the resulting key — npub, or SSH principal + `ssh_key`, or PGP
+fingerprint + `public_key` — must be registered in your auditor file; see the next section.
 
 You can inspect exactly what gets signed with:
 
 ```bash
 node tools/osc/osc.mjs canonicalize my-run.json
-node tools/osc/osc.mjs digest my-run.json        # the sha256 that actually gets schnorr-signed
+node tools/osc/osc.mjs digest my-run.json        # the sha256 Nostr signs (ssh/pgp sign the payload directly)
 ```
 
 ### 6. Place the file and open a PR
@@ -132,19 +160,35 @@ Create `auditors/<slug>.json`. Shape, following the demo file at
   "name": "Your Name",
   "contact": "you@example.com",
   "keys": [
-    { "npub": "npub1... your Nostr public key (NIP-19)" }
+    { "type": "nostr", "npub": "npub1... your Nostr public key (NIP-19)" },
+    { "type": "ssh", "principal": "you@example.com", "ssh_key": "ssh-ed25519 AAAA... (contents of ~/.ssh/id_ed25519.pub)" },
+    { "type": "pgp", "fingerprint": "0123456789ABCDEF0123456789ABCDEF01234567", "public_key": "-----BEGIN PGP PUBLIC KEY BLOCK-----\n...\n-----END PGP PUBLIC KEY BLOCK-----\n" }
   ]
 }
 ```
 
-`keys` is an array of `{ npub }` entries — each `npub` is a public Nostr identity (NIP-19),
-never a private key (`nsec`). You can register multiple npubs in the same auditor file, e.g.
-for key rotation.
+`keys` is an array; keep only the entry type(s) you'll actually sign with (see
+`auditors/TEMPLATE.json`) — you don't need all three. `type` is optional and inferred from
+the fields present (`npub` → nostr, `ssh_key` → ssh, `public_key`/`fingerprint` → pgp), but
+writing it explicitly is clearer. You can register several entries — multiple of the same
+type for key rotation, or one of each type to support more than one signing scheme:
 
-This is the same key you publish under to Nostr when the attestation is distributed (layer
-3) — one identity across layers. Publish the same npub in your Nostr profile or a NIP-05,
-so anyone can cross-check your identity out of band against what you register here — a
-lightweight way to catch a mismatched or substituted key.
+- **nostr** — `{ "type": "nostr", "npub": "npub1..." }`: a public Nostr identity (NIP-19),
+  never a private key (`nsec`).
+- **ssh** — `{ "type": "ssh", "principal": "you@example.com", "ssh_key": "ssh-ed25519 AAAA..." }`:
+  `ssh_key` is the key type + base64 only (the contents of e.g. `~/.ssh/id_ed25519.pub`);
+  `principal` is the identity string you pass to `--principal` when signing, and must match
+  exactly.
+- **pgp** — `{ "type": "pgp", "fingerprint": "…40 hex chars…", "public_key": "-----BEGIN PGP PUBLIC KEY BLOCK----- …" }`:
+  `fingerprint` is your key's 40-hex fingerprint; `public_key` is the full armored public-key
+  block (verification imports it into a scratch keyring rather than relying on a public
+  keyserver being reachable).
+
+The Nostr key is also the identity you publish under when the attestation is distributed
+(layer 3) — one identity across layers, if you use it. Whichever scheme(s) you register,
+publish the same key material somewhere public so anyone can cross-check your identity out
+of band — a Nostr profile or NIP-05 (nostr), `github.com/<user>.keys` (ssh), or a keyserver
+(pgp). This is a lightweight way to catch a mismatched or substituted key.
 
 ## What CI enforces
 
@@ -152,10 +196,13 @@ On every PR touching `attestations/`, `auditors/`, `schema/`, or `tools/`,
 `.github/workflows/validate.yml` runs three checks in order:
 
 1. **`node tools/osc/osc.mjs verify --all`** — structural checks (matching `validateStructure`
-   in `tools/osc/osc.mjs`) plus Nostr (BIP-340 schnorr / secp256k1) signature verification
-   against the npubs registered under `auditors/`. CI runs `npm ci` first to install the
-   one crypto dependency this now requires (`@noble/curves`, `@scure/base`) — verification
-   itself is still fully offline and trusts no server.
+   in `tools/osc/osc.mjs`) plus signature verification against the auditor's registered key
+   of the matching type. The signature may be `nostr-schnorr`, `ssh-ed25519`, or `pgp`, each
+   verified against the auditor's registered key of that type: Nostr is verified in pure JS
+   (BIP-340 schnorr / secp256k1, via `@noble/curves` / `@scure/base`); SSH and PGP are
+   verified by shelling out to the standard `ssh-keygen` and `gpg` tools. CI runs `npm ci`
+   first to install the Nostr crypto dependency — verification itself is still fully offline
+   and trusts no server, whichever scheme was used.
 2. **`ajv-cli` against `schema/attestation.schema.json`** — full JSON Schema validation
    (draft 2020-12).
 3. **`node tools/ci/invariants.mjs`** — registry-wide invariants that a single-file schema

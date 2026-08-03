@@ -75,9 +75,10 @@ function events(a) {
   const created_at = createdAt(a.run.date);
   const dTag = a.id.toLowerCase();
   const sev = topSeverity(a);
-  // The attestation is schnorr-signed by the auditor's Nostr key, so the same key/npub
-  // is the natural publisher of these events. Derive its hex pubkey for the `a` reference.
-  const signerNpub = a.signature?.principal || a.auditor?.npub;
+  // If the attestation was signed by a Nostr key, the same npub is the natural publisher.
+  // For ssh/pgp-signed attestations there is no npub in the signature; fall back to the
+  // auditor's declared npub if any, else a placeholder for the publishing bot to fill in.
+  const signerNpub = a.auditor?.npub || (a.signature?.principal?.startsWith("npub1") ? a.signature.principal : null);
   const signerHex = signerNpub ? npubToHex(signerNpub) : "<bot-pubkey>";
 
   // NIP-23 long-form report

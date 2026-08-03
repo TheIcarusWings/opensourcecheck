@@ -32,10 +32,11 @@ the fact.
 ## Verify it yourself
 
 Verification is fully offline and trusts no server. It checks the JSON structure of each
-attestation and validates its Nostr (BIP-340 schnorr / secp256k1) signature against the
-npubs registered under `auditors/`. The CLI has one audited crypto dependency
-(`@noble/curves`, `@scure/base`) — not zero-install, but still no network calls and no
-trusted third party.
+attestation and validates its signature against the auditor's registered key, whichever of
+the three schemes the signer used: Nostr signatures (BIP-340 schnorr / secp256k1) are
+checked in pure JS via the installed `@noble/curves` / `@scure/base`; SSH (`ssh-ed25519`)
+and PGP signatures are checked by shelling out to the standard `ssh-keygen` and `gpg` tools.
+No network calls and no trusted third party, either way.
 
 ```bash
 git clone https://github.com/TheIcarusWings/opensourcecheck.git
@@ -60,7 +61,15 @@ node tools/osc/osc.mjs new-run > my.json
 node tools/osc/osc.mjs sign my.json --nsec nsec1...
 ```
 
-Register your npub by adding `auditors/<you>.json`, then open a PR. Full step-by-step
+Sign with whichever key you already have — Nostr (above) is the default, but SSH and PGP
+work too:
+
+```bash
+node tools/osc/osc.mjs sign my.json --ssh-key ~/.ssh/id_ed25519 --principal you@example.com
+node tools/osc/osc.mjs sign my.json --pgp [--gpg-key <keyid>]
+```
+
+Register your key by adding `auditors/<you>.json`, then open a PR. Full step-by-step
 instructions, field-by-field, are in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## How trust works
@@ -68,9 +77,11 @@ instructions, field-by-field, are in [CONTRIBUTING.md](./CONTRIBUTING.md).
 OSC is a web of trust, not a gatekeeper. Anyone can submit an attestation, and CI enforces
 only *form*: schema validity, a real signature, a real (non-branch) commit. It does not rank
 findings or decide what's true. Weight comes from an auditor's track record — validated
-findings, false-positive rate, disputes — visible in their history. An auditor's identity is
-cross-checked via their Nostr profile or a NIP-05, not a centralized key directory.
-Maintainers merge PRs and enforce the disclosure policy; they do not rank code safety. See
+findings, false-positive rate, disputes — visible in their history. An auditor's identity —
+an npub (Nostr), an SSH principal, or a PGP fingerprint, depending on which key they signed
+with — is cross-checked out of band: via their Nostr profile or a NIP-05,
+`github.com/<user>.keys`, or a keyserver, not a centralized key directory. Maintainers merge
+PRs and enforce the disclosure policy; they do not rank code safety. See
 [policy/GOVERNANCE.md](./policy/GOVERNANCE.md) and [policy/DISCLOSURE.md](./policy/DISCLOSURE.md).
 
 ## Responsible disclosure
@@ -90,9 +101,9 @@ opensourcecheck/
 ├── attestations/<org>/<repo>/OSC-YYYY-NNNN.json  # one file per audit run
 ├── prompts/                            # versioned, named audit prompt packs
 ├── transcripts/                        # full run transcripts (or refs for large ones)
-├── auditors/                           # one file per auditor: keys (npub), contact
+├── auditors/                           # one file per auditor: keys (nostr/ssh/pgp), contact
 ├── tools/osc/                          # the osc CLI
-├── tools/lib/                          # shared Nostr signing primitives (nostr.mjs)
+├── tools/lib/                          # shared signing primitives (nostr.mjs, schemes.mjs)
 ├── tools/ci/                           # registry-wide CI invariant checks
 ├── policy/                             # GOVERNANCE.md, DISCLOSURE.md
 ├── site/                               # static viewer (Layer 2)

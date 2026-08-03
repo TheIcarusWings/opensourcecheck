@@ -38,4 +38,7 @@ $OSC verify --all >/dev/null && pass "registry verify --all is green" || fail "r
 echo "5. registry invariants hold"
 node tools/ci/invariants.mjs >/dev/null && pass "invariants OK" || fail "invariants failed"
 
+echo "6. ssh + pgp signing schemes round-trip"
+node tools/osc/test/schemes.mjs
+
 echo "ALL TESTS PASSED"

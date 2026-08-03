@@ -30,10 +30,15 @@ export function sha256Hex(buf) {
   return createHash("sha256").update(buf).digest("hex");
 }
 
-// 32-byte digest that gets schnorr-signed: sha256(context + "\n" + canonical(unsigned)).
+// The exact bytes every scheme binds to: "osc-attestation/v0\n" + canonical(unsigned).
+// Nostr signs sha256(payload); SSH and PGP sign the payload directly (they hash internally).
+export function payloadBytes(unsigned) {
+  return Buffer.from(SIG_CONTEXT + "\n" + canonicalize(unsigned), "utf8");
+}
+
+// 32-byte digest that gets schnorr-signed: sha256(payload).
 export function attestationDigest(unsigned) {
-  const bytes = Buffer.from(SIG_CONTEXT + "\n" + canonicalize(unsigned), "utf8");
-  return createHash("sha256").update(bytes).digest(); // Buffer (32 bytes)
+  return createHash("sha256").update(payloadBytes(unsigned)).digest(); // Buffer (32 bytes)
 }
 
 // ---- NIP-19 bech32 encode/decode (npub / nsec) ----

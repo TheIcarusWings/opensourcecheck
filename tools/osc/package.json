@@ -1,0 +1,10 @@
+{
+  "name": "@opensourcecheck/osc",
+  "version": "0.1.0",
+  "description": "Sign and verify OpenSourceCheck attestations. Zero runtime dependencies; needs Node >= 18 and OpenSSH.",
+  "type": "module",
+  "bin": { "osc": "./osc.mjs" },
+  "engines": { "node": ">=18" },
+  "license": "MIT",
+  "files": ["osc.mjs"]
+}

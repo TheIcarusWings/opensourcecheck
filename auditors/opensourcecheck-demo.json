@@ -1,0 +1,10 @@
+{
+  "id": "opensourcecheck-demo",
+  "name": "OpenSourceCheck Demo Key",
+  "role": "demo",
+  "warning": "THROWAWAY DEMO KEY. Its private half is committed under tools/osc/test/demo_key so seed attestations and CI self-tests are reproducible. Anyone can forge this identity. NEVER use it for a real attestation and NEVER trust its verdicts.",
+  "contact": "demo@opensourcecheck.org",
+  "keys": [
+    { "principal": "demo@opensourcecheck.org", "ssh_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILH+cVbpiQfSqPdva8kv2DU1uzsHBd9xk5pKM31opB/f" }
+  ]
+}

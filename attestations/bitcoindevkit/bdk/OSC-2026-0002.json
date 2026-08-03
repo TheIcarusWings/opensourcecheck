@@ -1,0 +1,39 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0002",
+  "target": {
+    "repo": "https://github.com/bitcoindevkit/bdk",
+    "commit": "1111111111111111111111111111111111111111",
+    "subpath": "crates/wallet/src/",
+    "release_tag": "ILLUSTRATIVE"
+  },
+  "run": {
+    "date": "2026-08-03",
+    "model": "claude-opus-4-8",
+    "harness": "claude-code v3.1",
+    "prompts_ref": "prompts/deep-audit-v1.md",
+    "scope": "ILLUSTRATIVE SEED ATTESTATION demonstrating a clean-run record. Illustrated scope: descriptor parsing and address derivation in the wallet crate; checked for key-material logging, weak randomness in key generation, and unchecked derivation-index arithmetic. NOT in scope: PSBT signing, chain sync, FFI bindings. target.commit is a placeholder.",
+    "duration_minutes": 22,
+    "runs_count": 3
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0002-F1",
+      "severity": "none-found",
+      "status": "unreviewed",
+      "summary": "No security-relevant findings surfaced within the stated scope across 3 independent runs. This is a data point, NOT an assertion that the code is safe."
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "opensourcecheck-demo",
+    "name": "OpenSourceCheck Demo Key",
+    "contact": "demo@opensourcecheck.org"
+  },
+  "signature": {
+    "alg": "ssh-ed25519",
+    "principal": "demo@opensourcecheck.org",
+    "namespace": "opensourcecheck-attestation/v0",
+    "value": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgsf5xVumJB9Ko929ryS/YNTW7Ow\ncF33GTmkozfWikH98AAAAeb3BlbnNvdXJjZWNoZWNrLWF0dGVzdGF0aW9uL3YwAAAAAAAA\nAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5AAAAQCs9JCGvWrbgrsNKcjukwy0FCBkT12\ndRFRmb84zKwxLo6vfOz4o68oEfQd9Dp7qoDv67VqF8bDrhkBsOfyl8UAs=\n-----END SSH SIGNATURE-----\n"
+  }
+}

@@ -1,0 +1,10 @@
+node_modules/
+site/dist/
+tools/nostr/out/
+*.log
+.DS_Store
+# Signing keys never belong in the registry. The only exception is the clearly
+# marked throwaway demo key under tools/osc/test/, which is committed on purpose.
+*.pem
+id_ed25519
+id_rsa

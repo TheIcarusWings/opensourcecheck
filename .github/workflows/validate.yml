@@ -1,0 +1,37 @@
+name: validate-attestations
+
+on:
+  pull_request:
+    paths:
+      - "attestations/**"
+      - "auditors/**"
+      - "schema/**"
+      - "tools/**"
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Trust-core self-test (sign / verify / reject tamper)
+        run: bash tools/osc/test/run.sh
+
+      - name: Verify all attestations (structure + signatures)
+        run: node tools/osc/osc.mjs verify --all
+
+      - name: Full JSON Schema validation (ajv)
+        run: |
+          npx --yes ajv-cli@5 validate \
+            -s schema/attestation.schema.json \
+            --spec=draft2020 \
+            -d "attestations/**/*.json"
+
+      - name: Registry invariants (unique ids, auditor exists, no branch pins)
+        run: node tools/ci/invariants.mjs

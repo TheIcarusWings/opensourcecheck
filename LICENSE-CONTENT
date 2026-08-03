@@ -1,0 +1,14 @@
+Attestation content license — CC-BY-4.0
+=======================================
+
+The registry content in this repository — everything under `attestations/`,
+`prompts/`, and `transcripts/`, plus the auditor records under `auditors/` — is
+licensed under the Creative Commons Attribution 4.0 International License
+(CC-BY-4.0): https://creativecommons.org/licenses/by/4.0/
+
+You are free to share and adapt this content for any purpose, provided you give
+appropriate credit to the attesting auditor. Attribution matters here: an
+auditor's reputation is built from the attestations they sign, so preserving the
+`auditor` and `signature` fields is both the license condition and the point.
+
+The code and schema (tools/, schema/, site/build.mjs) are licensed MIT — see LICENSE.

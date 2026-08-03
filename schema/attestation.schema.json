@@ -1,0 +1,205 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://opensourcecheck.org/schema/attestation/v0.json",
+  "title": "OpenSourceCheck Attestation",
+  "description": "One signed record of a single LLM-assisted security-review run over an open-source project at an exact commit. Records what was checked, by which model, with which prompts, and what a human validator concluded. Never asserts that code is 'safe'.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "target", "run", "findings", "verdict", "auditor", "signature"],
+  "properties": {
+    "schema": {
+      "const": "osc-attestation/v0",
+      "description": "Schema version identifier. Frozen per major version."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^OSC-[0-9]{4}-[0-9]{4,}$",
+      "description": "Registry-unique attestation id, e.g. OSC-2026-0001."
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "commit"],
+      "properties": {
+        "repo": {
+          "type": "string",
+          "format": "uri",
+          "description": "Canonical source URL of the audited project."
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$",
+          "description": "Full 40-char git commit SHA-1 that was audited. Never a branch name — a branch moves and makes the record meaningless."
+        },
+        "subpath": {
+          "type": "string",
+          "description": "Optional path within the repo that scopes the audit, e.g. 'shared/'."
+        },
+        "release_tag": {
+          "type": "string",
+          "description": "Optional human-facing release anchor, e.g. 'v5.6.0'."
+        }
+      }
+    },
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date", "model", "harness", "prompts_ref", "scope"],
+      "properties": {
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "UTC date the run was performed (YYYY-MM-DD)."
+        },
+        "model": {
+          "type": "string",
+          "description": "Exact model identifier used, e.g. 'claude-opus-4-8', 'gpt-5', 'gemini-3-pro', 'local:qwen3-coder-480b'. Never a marketing name."
+        },
+        "harness": {
+          "type": "string",
+          "description": "Tool/agent that drove the model, incl. version, e.g. 'claude-code v3.1', 'manual-chat', 'custom-script'."
+        },
+        "prompts_ref": {
+          "type": "string",
+          "description": "Repo-relative path to the exact prompt pack used, under prompts/. Enables re-running the audit."
+        },
+        "transcript_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 of the full run transcript. The transcript itself lives under transcripts/ or in an external artifact store referenced by transcript_uri."
+        },
+        "transcript_uri": {
+          "type": "string",
+          "description": "Optional location of the full transcript when too large to store in-repo (repo-relative path, https URL, ipfs://, or magnet:)."
+        },
+        "scope": {
+          "type": "string",
+          "description": "What was and was NOT covered by this run. Required — an audit with unstated scope is not interpretable."
+        },
+        "duration_minutes": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Optional wall-clock minutes for the run."
+        },
+        "cost_estimate_usd": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Optional estimated model cost in USD."
+        },
+        "runs_count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Optional number of independent repetitions this attestation aggregates. LLM runs are non-deterministic; >1 strengthens signal."
+        }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "description": "Zero or more findings. An empty array is invalid; a run that surfaced nothing MUST contain exactly one finding with severity 'none-found'.",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["ref", "severity", "status", "summary"],
+        "properties": {
+          "ref": {
+            "type": "string",
+            "pattern": "^OSC-[0-9]{4}-[0-9]{4,}-F[0-9]+$",
+            "description": "Finding reference, e.g. OSC-2026-0001-F1."
+          },
+          "severity": {
+            "enum": ["critical", "high", "medium", "low", "info", "none-found"],
+            "description": "Severity of the finding. 'none-found' is a first-class result meaning the run reported nothing in scope."
+          },
+          "status": {
+            "enum": ["validated", "false-positive", "disputed", "unreviewed", "withheld-pending-disclosure"],
+            "description": "Human-triage status. Raw model output is 'unreviewed'; only a named validator may set 'validated'. Medium+ findings in live software use 'withheld-pending-disclosure' with the body redacted until disclosure."
+          },
+          "summary": {
+            "type": "string",
+            "description": "Short human-readable statement of the finding. Redacted to a placeholder when status is 'withheld-pending-disclosure'."
+          },
+          "location": {
+            "type": "string",
+            "description": "Optional file:line or symbol where the finding sits."
+          },
+          "cwe": {
+            "type": "string",
+            "pattern": "^CWE-[0-9]+$",
+            "description": "Optional CWE identifier."
+          },
+          "body_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$",
+            "description": "For withheld findings: SHA-256 of the full finding text. Commits the auditor to content + timestamp without revealing it (provable priority, no leak)."
+          },
+          "validator": {
+            "type": "string",
+            "description": "Identifier of the human who set 'status'. Required for 'validated' or 'false-positive'."
+          },
+          "validator_notes": {
+            "type": "string",
+            "description": "How the finding was reproduced or refuted."
+          },
+          "disclosure": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Disclosure-tracking metadata for withheld findings.",
+            "properties": {
+              "reported_to": { "type": "string", "description": "Security contact the finding was reported to." },
+              "reported_date": { "type": "string", "format": "date" },
+              "embargo_until": { "type": "string", "format": "date", "description": "Earliest date the body may be published." }
+            }
+          }
+        }
+      }
+    },
+    "verdict": {
+      "enum": ["findings-validated", "clean-run", "inconclusive"],
+      "description": "Run-level conclusion. 'clean-run' = ran to completion in scope, nothing found. This is NOT 'the code is safe' — a clean AI run can and does miss real bugs (see Coldcard, 2026)."
+    },
+    "auditor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$",
+          "description": "Stable auditor slug matching a file under auditors/<id>.json."
+        },
+        "name": { "type": "string" },
+        "npub": {
+          "type": "string",
+          "pattern": "^npub1[a-z0-9]+$",
+          "description": "Optional Nostr public key (secp256k1)."
+        },
+        "contact": { "type": "string", "description": "Optional contact for disclosure coordination." }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alg", "principal", "value"],
+      "description": "Detached signature over the canonical JSON of this object with the 'signature' field removed (RFC 8785 JCS).",
+      "properties": {
+        "alg": {
+          "const": "ssh-ed25519",
+          "description": "Signature algorithm. SSH signatures verify against keys published at github.com/<user>.keys and registered under auditors/."
+        },
+        "principal": {
+          "type": "string",
+          "description": "SSH signing principal (identity), must match an entry in the auditor's registered keys."
+        },
+        "namespace": {
+          "const": "opensourcecheck-attestation/v0",
+          "description": "SSH signature namespace, binds the signature to this registry's purpose."
+        },
+        "value": {
+          "type": "string",
+          "description": "Armored SSH signature (SSHSIG PEM block)."
+        }
+      }
+    }
+  }
+}

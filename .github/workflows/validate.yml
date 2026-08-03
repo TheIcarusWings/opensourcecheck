@@ -28,7 +28,7 @@ jobs:
 
       - name: Full JSON Schema validation (ajv)
         run: |
-          npx --yes ajv-cli@5 validate \
+          npx --yes -p ajv-cli@5 -p ajv-formats@3 ajv validate -c ajv-formats \
             -s schema/attestation.schema.json \
             --spec=draft2020 \
             -d "attestations/**/*.json"

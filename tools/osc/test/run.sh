@@ -4,9 +4,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 OSC="node tools/osc/osc.mjs"
-KEY="tools/osc/test/demo_key"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
+# Git does not preserve 0600 perms, and ssh-keygen refuses a world-readable private
+# key. Copy the committed demo key to a private temp file before signing.
+KEY="$TMP/demo_key"
+cp tools/osc/test/demo_key "$KEY"
+chmod 600 "$KEY"
 pass() { echo "  PASS  $1"; }
 fail() { echo "  FAIL  $1"; exit 1; }
 

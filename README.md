@@ -36,7 +36,7 @@ attestation and validates its SSH signature against the public keys registered u
 `auditors/` — nothing else is required.
 
 ```bash
-git clone https://github.com/opensourcecheck/opensourcecheck.git
+git clone https://github.com/TheIcarusWings/opensourcecheck.git
 cd opensourcecheck
 node tools/osc/osc.mjs verify --all
 ```

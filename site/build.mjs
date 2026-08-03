@@ -49,7 +49,7 @@ const PAGE = (title, body) => `<!doctype html>
 </head><body>
 <header class="site"><a class="brand" href="index.html">OpenSource<span>Check</span></a>
 <nav><a href="index.html">Registry</a><a href="auditors.html">Auditors</a>
-<a href="https://github.com/opensourcecheck/opensourcecheck">Source</a></nav></header>
+<a href="https://github.com/TheIcarusWings/opensourcecheck">Source</a></nav></header>
 <main>${body}</main>
 <footer><p>OpenSourceCheck records what was <em>checked</em> and what came back. It never asserts code is safe — a clean AI run can miss real bugs. Every entry is a signed, human-validated attestation; verify offline with <code>node tools/osc/osc.mjs verify --all</code>.</p></footer>
 </body></html>`;

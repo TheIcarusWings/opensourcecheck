@@ -181,23 +181,21 @@
       "type": "object",
       "additionalProperties": false,
       "required": ["alg", "principal", "value"],
-      "description": "Detached signature over the canonical JSON of this object with the 'signature' field removed (RFC 8785 JCS).",
+      "description": "Detached Nostr (BIP-340 schnorr / secp256k1) signature over sha256('osc-attestation/v0\\n' + RFC-8785-canonical JSON of this object with 'signature' removed). The signing key is the auditor's Nostr identity — the same key used to publish on Nostr.",
       "properties": {
         "alg": {
-          "const": "ssh-ed25519",
-          "description": "Signature algorithm. SSH signatures verify against keys published at github.com/<user>.keys and registered under auditors/."
+          "const": "nostr-schnorr",
+          "description": "Signature algorithm: BIP-340 schnorr over secp256k1 (the Bitcoin/Nostr curve)."
         },
         "principal": {
           "type": "string",
-          "description": "SSH signing principal (identity), must match an entry in the auditor's registered keys."
-        },
-        "namespace": {
-          "const": "opensourcecheck-attestation/v0",
-          "description": "SSH signature namespace, binds the signature to this registry's purpose."
+          "pattern": "^npub1[a-z0-9]{58,}$",
+          "description": "Signer identity as a NIP-19 npub. Must match a key registered under auditors/<id>.json."
         },
         "value": {
           "type": "string",
-          "description": "Armored SSH signature (SSHSIG PEM block)."
+          "pattern": "^[0-9a-f]{128}$",
+          "description": "64-byte schnorr signature, hex-encoded."
         }
       }
     }

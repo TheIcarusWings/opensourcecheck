@@ -9,7 +9,11 @@ you find something real. Read [PLAN.md](./PLAN.md) for the full rationale if you
 
 ### 1. Scaffold a new run
 
+The `osc` CLI has one audited crypto dependency (`@noble/curves`, `@scure/base` — used for
+Nostr signing). Install it once at the repo root before running any `osc` command:
+
 ```bash
+npm ci
 node tools/osc/osc.mjs new-run > my-run.json
 ```
 
@@ -80,24 +84,34 @@ enforce that a clean run is recorded explicitly rather than omitted.
 "auditor": { "id": "your-slug", "name": "Your Name", "contact": "you@example.com" }
 ```
 
-`auditor.id` must match a file you create at `auditors/<your-slug>.json` (see below). Then
-sign:
+`auditor.id` must match a file you create at `auditors/<your-slug>.json` (see below). If you
+don't have a Nostr key yet, generate one:
 
 ```bash
-node tools/osc/osc.mjs sign my-run.json --key ~/.ssh/id_ed25519 --principal you@example.com
+npm ci
+node tools/osc/osc.mjs keygen
 ```
 
-This canonicalizes the attestation (RFC 8785 JCS, `signature` field excluded), signs it with
-`ssh-keygen -Y sign` under the namespace `opensourcecheck-attestation/v0`, and writes the
-signed `signature` block back into the file in place. `--principal` must match one of the
-`principal` values you register in your auditor file (see next section) — `osc sign` falls
-back to `signature.principal` or `auditor.contact` in the scaffold if `--principal` is
-omitted.
+This prints a fresh `npub` (public, register it in your auditor file) and `nsec` (secret,
+keep it private). Then sign:
+
+```bash
+node tools/osc/osc.mjs sign my-run.json --nsec nsec1...
+```
+
+(or `--key <file containing the nsec>`, or set `$OSC_NSEC`). This canonicalizes the
+attestation (RFC 8785 JCS, `signature` field excluded), computes
+`sha256("osc-attestation/v0\n" + canonical-json)`, signs that digest with a BIP-340 schnorr
+signature over secp256k1, and writes the signed `signature` block — `alg: "nostr-schnorr"`,
+`principal: "<your npub>"`, `value: "<128-hex signature>"` — back into the file in place.
+There is no `--principal` flag: the npub is derived from the key you sign with, and it must
+be one of the `npub`s you register in your auditor file (see next section).
 
 You can inspect exactly what gets signed with:
 
 ```bash
 node tools/osc/osc.mjs canonicalize my-run.json
+node tools/osc/osc.mjs digest my-run.json        # the sha256 that actually gets schnorr-signed
 ```
 
 ### 6. Place the file and open a PR
@@ -110,28 +124,27 @@ checks automatically (see below).
 ## Registering as an auditor
 
 Create `auditors/<slug>.json`. Shape, following the demo file at
-`auditors/opensourcecheck-demo.json`:
+`auditors/opensourcecheck-demo.json` (and the blank template at `auditors/TEMPLATE.json`):
 
 ```jsonc
 {
   "id": "your-slug",
   "name": "Your Name",
   "contact": "you@example.com",
-  "npub": "npub1…",              // optional Nostr public key
   "keys": [
-    { "principal": "you@example.com", "ssh_key": "ssh-ed25519 AAAA..." }
+    { "npub": "npub1... your Nostr public key (NIP-19)" }
   ]
 }
 ```
 
-`keys` is an array of `{ principal, ssh_key }` pairs — `ssh_key` is the public key line
-(e.g. the contents of `~/.ssh/id_ed25519.pub`), not a private key. `principal` is the
-identity string you sign attestations with via `osc sign --principal`. You can register
-multiple keys/principals in the same auditor file.
+`keys` is an array of `{ npub }` entries — each `npub` is a public Nostr identity (NIP-19),
+never a private key (`nsec`). You can register multiple npubs in the same auditor file, e.g.
+for key rotation.
 
-GitHub publishes your public keys at `github.com/<user>.keys`, which anyone can cross-check
-out-of-band against what you register here — a lightweight way to catch a mismatched or
-substituted key.
+This is the same key you publish under to Nostr when the attestation is distributed (layer
+3) — one identity across layers. Publish the same npub in your Nostr profile or a NIP-05,
+so anyone can cross-check your identity out of band against what you register here — a
+lightweight way to catch a mismatched or substituted key.
 
 ## What CI enforces
 
@@ -139,8 +152,10 @@ On every PR touching `attestations/`, `auditors/`, `schema/`, or `tools/`,
 `.github/workflows/validate.yml` runs three checks in order:
 
 1. **`node tools/osc/osc.mjs verify --all`** — structural checks (matching `validateStructure`
-   in `tools/osc/osc.mjs`) plus SSH signature verification against the keys registered under
-   `auditors/`.
+   in `tools/osc/osc.mjs`) plus Nostr (BIP-340 schnorr / secp256k1) signature verification
+   against the npubs registered under `auditors/`. CI runs `npm ci` first to install the
+   one crypto dependency this now requires (`@noble/curves`, `@scure/base`) — verification
+   itself is still fully offline and trusts no server.
 2. **`ajv-cli` against `schema/attestation.schema.json`** — full JSON Schema validation
    (draft 2020-12).
 3. **`node tools/ci/invariants.mjs`** — registry-wide invariants that a single-file schema

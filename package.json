@@ -4,7 +4,9 @@
   "private": true,
   "description": "A public, git-native registry of signed, human-validated, reproducible LLM security-audit attestations for open-source (Bitcoin-first) projects.",
   "type": "module",
-  "bin": { "osc": "./tools/osc/osc.mjs" },
+  "bin": {
+    "osc": "./tools/osc/osc.mjs"
+  },
   "scripts": {
     "verify": "node tools/osc/osc.mjs verify --all",
     "invariants": "node tools/ci/invariants.mjs",
@@ -13,6 +15,12 @@
     "build:nostr": "node tools/nostr/build-events.mjs",
     "serve": "node -e \"import('node:http').then(({createServer})=>import('node:fs').then(({readFileSync,existsSync})=>createServer((q,r)=>{let p='site/dist'+(q.url==='/'?'/index.html':q.url);if(!existsSync(p))p='site/dist/index.html';r.setHeader('content-type',p.endsWith('.json')?'application/json':'text/html');r.end(readFileSync(p))}).listen(8000,()=>console.log('http://localhost:8000'))))\""
   },
-  "engines": { "node": ">=18" },
-  "license": "MIT"
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@noble/curves": "^1.9.7",
+    "@scure/base": "^1.2.6"
+  }
 }

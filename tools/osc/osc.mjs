@@ -1,50 +1,34 @@
 #!/usr/bin/env node
 // osc — the OpenSourceCheck attestation tool.
-// Zero runtime dependencies: needs only Node >= 18 and OpenSSH (`ssh-keygen`).
-// Commands:
-//   osc new-run                 scaffold a blank attestation to stdout
-//   osc canonicalize <file>     print the RFC 8785 canonical bytes that get signed
-//   osc sign <file> --key K [--principal P]   sign in place with an ssh key
-//   osc verify <file>           verify one attestation (structure + signature)
-//   osc verify --all            verify every attestation under attestations/
-//   osc hash <file>             print sha256 of a file (for transcript_sha256 / body_sha256)
+// Signs and verifies attestations with a Nostr key (BIP-340 schnorr / secp256k1 — the
+// Bitcoin/Nostr curve). Identity is your npub. Verification is fully offline and trusts
+// no server. Requires Node >= 18 and one `npm install` (@noble/curves, @scure/base).
 //
-// The registry is a plain git repo; this tool trusts no server. Verification is fully
-// offline given the auditor public keys registered under auditors/.
+// Commands:
+//   osc new-run                          scaffold a blank attestation to stdout
+//   osc canonicalize <file>              print the canonical bytes that get signed
+//   osc digest <file>                    print the sha256 digest that gets schnorr-signed
+//   osc hash <file>                      print sha256 of a file (transcript_sha256 / body_sha256)
+//   osc keygen                           generate a fresh Nostr keypair (nsec + npub)
+//   osc sign <file> [--nsec N | --key F] sign in place with a Nostr secret (nsec/hex, or a file / $OSC_NSEC)
+//   osc verify <file>                    verify one attestation (structure + signature)
+//   osc verify --all                     verify every attestation under attestations/
 
-import { readFileSync, writeFileSync, mkdtempSync, readdirSync, statSync } from "node:fs";
-import { createHash } from "node:crypto";
-import { execFileSync } from "node:child_process";
-import { tmpdir } from "node:os";
-import { join, dirname, resolve } from "node:path";
+import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
+import { createHash, randomBytes } from "node:crypto";
+import { dirname, resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { bech32 } from "@scure/base";
+import {
+  canonicalize, SIG_ALG,
+  npubToHex, hexToNpub, decodeSecret, pubkeyHexFromSecret,
+  signAttestation, verifyAttestationSig,
+} from "../lib/nostr.mjs";
 
-const NAMESPACE = "opensourcecheck-attestation/v0";
 const SCHEMA_ID = "osc-attestation/v0";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-// ---------- RFC 8785 (JCS) canonicalization ----------
-// Deterministic JSON: object keys sorted lexicographically by UTF-16 code unit,
-// no insignificant whitespace. Sufficient for our value space (strings, small
-// numbers, booleans, nested objects/arrays; no NaN/Infinity/huge floats).
-function canonicalize(value) {
-  if (value === null || typeof value === "number" || typeof value === "boolean") {
-    return JSON.stringify(value);
-  }
-  if (typeof value === "string") return JSON.stringify(value);
-  if (Array.isArray(value)) {
-    return "[" + value.map(canonicalize).join(",") + "]";
-  }
-  if (typeof value === "object") {
-    const keys = Object.keys(value).sort();
-    return "{" + keys.map((k) => JSON.stringify(k) + ":" + canonicalize(value[k])).join(",") + "}";
-  }
-  throw new Error("Cannot canonicalize value of type " + typeof value);
-}
-
-function sha256Hex(buf) {
-  return createHash("sha256").update(buf).digest("hex");
-}
+const sha256Hex = (buf) => createHash("sha256").update(buf).digest("hex");
 
 // ---------- structural validation (no external schema validator needed) ----------
 const SEVERITIES = ["critical", "high", "medium", "low", "info", "none-found"];
@@ -54,9 +38,7 @@ const VERDICTS = ["findings-validated", "clean-run", "inconclusive"];
 function validateStructure(a) {
   const errs = [];
   const req = (cond, msg) => { if (!cond) errs.push(msg); };
-
-  req(a && typeof a === "object", "attestation must be an object");
-  if (!a || typeof a !== "object") return errs;
+  if (!a || typeof a !== "object") return ["attestation must be an object"];
 
   req(a.schema === SCHEMA_ID, `schema must be "${SCHEMA_ID}"`);
   req(/^OSC-[0-9]{4}-[0-9]{4,}$/.test(a.id || ""), "id must match OSC-YYYY-NNNN");
@@ -98,69 +80,34 @@ function validateStructure(a) {
   req(typeof au.name === "string" && au.name.length > 0, "auditor.name required");
 
   const s = a.signature || {};
-  req(s.alg === "ssh-ed25519", "signature.alg must be ssh-ed25519");
-  req(typeof s.principal === "string" && s.principal.length > 0, "signature.principal required");
-  req(typeof s.value === "string" && s.value.includes("SSH SIGNATURE"), "signature.value must be an armored SSH signature");
+  req(s.alg === SIG_ALG, `signature.alg must be ${SIG_ALG}`);
+  req(/^npub1[a-z0-9]{58,}$/.test(s.principal || ""), "signature.principal must be an npub");
+  req(/^[0-9a-f]{128}$/.test(s.value || ""), "signature.value must be a 128-hex schnorr signature");
 
   return errs;
 }
 
-// ---------- ssh signing / verification ----------
-function tmpFile(prefix, data) {
-  const dir = mkdtempSync(join(tmpdir(), "osc-"));
-  const p = join(dir, prefix);
-  writeFileSync(p, data);
-  return p;
-}
-
-function signAttestation(att, keyPath, principal) {
-  const { signature, ...unsigned } = att;
-  const bytes = canonicalize(unsigned);
-  const payloadPath = tmpFile("payload", bytes);
-  execFileSync("ssh-keygen", ["-Y", "sign", "-n", NAMESPACE, "-f", keyPath, payloadPath], { stdio: ["ignore", "ignore", "inherit"] });
-  const sig = readFileSync(payloadPath + ".sig", "utf8");
-  return {
-    ...unsigned,
-    signature: { alg: "ssh-ed25519", principal, namespace: NAMESPACE, value: sig },
-  };
-}
-
-function loadAuditorKeys(auditorId) {
+// ---------- auditor registry ----------
+function loadAuditorNpubs(auditorId) {
   const p = join(REPO_ROOT, "auditors", auditorId + ".json");
   const auditor = JSON.parse(readFileSync(p, "utf8"));
-  return auditor.keys || [];
-}
-
-function verifySignature(att) {
-  const { signature, ...unsigned } = att;
-  if (!signature) return { ok: false, reason: "no signature" };
-  const bytes = canonicalize(unsigned);
-
-  const keys = loadAuditorKeys(att.auditor.id);
-  const match = keys.find((k) => k.principal === signature.principal);
-  if (!match) return { ok: false, reason: `principal ${signature.principal} not registered for auditor ${att.auditor.id}` };
-
-  const allowed = `${signature.principal} namespaces="${NAMESPACE}" ${match.ssh_key}\n`;
-  const allowedPath = tmpFile("allowed_signers", allowed);
-  const sigPath = tmpFile("payload.sig", signature.value);
-  const payloadPath = sigPath.replace(/\.sig$/, "");
-  writeFileSync(payloadPath, bytes);
-  try {
-    execFileSync("ssh-keygen", ["-Y", "verify", "-f", allowedPath, "-I", signature.principal, "-n", NAMESPACE, "-s", sigPath],
-      { input: bytes, stdio: ["pipe", "ignore", "pipe"] });
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, reason: "ssh-keygen verify failed: " + (e.stderr ? e.stderr.toString().trim() : e.message) };
-  }
+  return (auditor.keys || []).map((k) => k.npub);
 }
 
 function verifyFile(path) {
   const att = JSON.parse(readFileSync(path, "utf8"));
   const structErrs = validateStructure(att);
   if (structErrs.length) return { path, ok: false, errors: structErrs };
-  const sig = verifySignature(att);
-  if (!sig.ok) return { path, ok: false, errors: [sig.reason] };
-  return { path, ok: true, errors: [] };
+
+  // principal must be registered for this auditor
+  let registered;
+  try { registered = loadAuditorNpubs(att.auditor.id); }
+  catch { return { path, ok: false, errors: [`auditor ${att.auditor.id} has no auditors/${att.auditor.id}.json`] }; }
+  if (!registered.includes(att.signature.principal))
+    return { path, ok: false, errors: [`principal ${att.signature.principal} not registered for auditor ${att.auditor.id}`] };
+
+  const sig = verifyAttestationSig(att);
+  return sig.ok ? { path, ok: true, errors: [] } : { path, ok: false, errors: [sig.reason] };
 }
 
 function walkAttestations() {
@@ -173,7 +120,7 @@ function walkAttestations() {
       else if (name.endsWith(".json")) out.push(p);
     }
   };
-  try { rec(root); } catch { /* no attestations yet */ }
+  try { rec(root); } catch { /* none yet */ }
   return out;
 }
 
@@ -186,7 +133,7 @@ function scaffold() {
     run: {
       date: "2026-01-01",
       model: "claude-opus-4-8",
-      harness: "claude-code v3.1",
+      harness: "claude-code",
       prompts_ref: "prompts/deep-audit-v1.md",
       transcript_sha256: "",
       scope: "Describe exactly what was and was NOT reviewed.",
@@ -195,8 +142,8 @@ function scaffold() {
       { ref: "OSC-2026-0000-F1", severity: "none-found", status: "unreviewed", summary: "Nothing found in scope." },
     ],
     verdict: "clean-run",
-    auditor: { id: "your-slug", name: "Your Name", npub: "" },
-    signature: { alg: "ssh-ed25519", principal: "you@example.com", namespace: NAMESPACE, value: "<run: osc sign>" },
+    auditor: { id: "your-slug", name: "Your Name", npub: "npub1..." },
+    signature: { alg: SIG_ALG, principal: "npub1...", value: "<run: osc sign>" },
   };
 }
 
@@ -211,6 +158,13 @@ function parseFlags(args) {
   return { flags, positional };
 }
 
+function resolveSecret(flags) {
+  if (flags.nsec && flags.nsec !== true) return decodeSecret(flags.nsec);
+  if (flags.key && flags.key !== true) return decodeSecret(readFileSync(flags.key, "utf8"));
+  if (process.env.OSC_NSEC) return decodeSecret(process.env.OSC_NSEC);
+  throw new Error("no secret: pass --nsec <nsec1…>, --key <file>, or set $OSC_NSEC");
+}
+
 function main() {
   const [cmd, ...rest] = process.argv.slice(2);
   const { flags, positional } = parseFlags(rest);
@@ -221,9 +175,14 @@ function main() {
       break;
 
     case "canonicalize": {
-      const att = JSON.parse(readFileSync(positional[0], "utf8"));
-      const { signature, ...unsigned } = att;
+      const { signature, ...unsigned } = JSON.parse(readFileSync(positional[0], "utf8"));
       process.stdout.write(canonicalize(unsigned) + "\n");
+      break;
+    }
+
+    case "digest": {
+      const { signature, ...unsigned } = JSON.parse(readFileSync(positional[0], "utf8"));
+      process.stdout.write(sha256Hex(Buffer.from("osc-attestation/v0\n" + canonicalize(unsigned), "utf8")) + "\n");
       break;
     }
 
@@ -231,15 +190,25 @@ function main() {
       process.stdout.write(sha256Hex(readFileSync(positional[0])) + "\n");
       break;
 
+    case "keygen": {
+      let sk = randomBytes(32);
+      // ensure a valid schnorr secret (astronomically unlikely to loop)
+      let pubHex;
+      try { pubHex = pubkeyHexFromSecret(sk); } catch { sk = randomBytes(32); pubHex = pubkeyHexFromSecret(sk); }
+      console.log("npub:", hexToNpub(pubHex));
+      console.log("nsec:", bech32.encode("nsec", bech32.toWords(sk), 1000), "  (keep this secret — anyone with it can sign as you)");
+      break;
+    }
+
     case "sign": {
       const file = positional[0];
-      if (!file || !flags.key) { console.error("usage: osc sign <file> --key <ssh_key> [--principal <id>]"); process.exit(2); }
+      if (!file) { console.error("usage: osc sign <file> [--nsec <nsec1…> | --key <file>]"); process.exit(2); }
       const att = JSON.parse(readFileSync(file, "utf8"));
-      const principal = flags.principal || att.signature?.principal || att.auditor?.contact;
-      if (!principal) { console.error("no principal: pass --principal or set signature.principal"); process.exit(2); }
-      const signed = signAttestation(att, flags.key, principal);
+      const { signature, ...unsigned } = att;
+      const sk = resolveSecret(flags);
+      const signed = signAttestation(unsigned, sk);
       writeFileSync(file, JSON.stringify(signed, null, 2) + "\n");
-      console.error(`signed ${file} as ${principal}`);
+      console.error(`signed ${file} as ${signed.signature.principal}`);
       break;
     }
 
@@ -259,7 +228,7 @@ function main() {
 
     default:
       console.error("osc — OpenSourceCheck attestation tool\n" +
-        "commands: new-run | canonicalize <f> | hash <f> | sign <f> --key K | verify <f> | verify --all");
+        "commands: new-run | canonicalize <f> | digest <f> | hash <f> | keygen | sign <f> [--nsec|--key] | verify <f> | verify --all");
       process.exit(cmd ? 2 : 0);
   }
 }

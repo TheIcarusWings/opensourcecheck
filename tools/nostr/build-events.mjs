@@ -12,6 +12,7 @@
 import { readFileSync, readdirSync, statSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { npubToHex } from "../lib/nostr.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const OUT = join(ROOT, "tools", "nostr", "out");
@@ -74,6 +75,10 @@ function events(a) {
   const created_at = createdAt(a.run.date);
   const dTag = a.id.toLowerCase();
   const sev = topSeverity(a);
+  // The attestation is schnorr-signed by the auditor's Nostr key, so the same key/npub
+  // is the natural publisher of these events. Derive its hex pubkey for the `a` reference.
+  const signerNpub = a.signature?.principal || a.auditor?.npub;
+  const signerHex = signerNpub ? npubToHex(signerNpub) : "<bot-pubkey>";
 
   // NIP-23 long-form report
   const longform = {
@@ -102,7 +107,7 @@ function events(a) {
       ["L", `${NS}.severity`],
       ["l", sev, `${NS}.severity`],
       ["r", a.target.repo],                                 // labeled target
-      ["a", `30023:<bot-pubkey>:${dTag}`],                  // points at the long-form report
+      ["a", `30023:${signerHex}:${dTag}`],                  // points at the long-form report
       ["osc-id", a.id],
       ["osc-commit", a.target.commit],
     ],

@@ -96,8 +96,8 @@ point, not a guarantee. Every rendered page carries this disclaimer prominently.
     }
   ],
   "verdict": "findings-validated | clean-run | inconclusive",
-  "auditor": { "name": "...", "npub": "npub1…", "keys": ["ssh-ed25519 …"] },
-  "signature": "…"                          // detached sig over canonical JSON
+  "auditor": { "id": "...", "name": "...", "npub": "npub1…" },
+  "signature": { "alg": "nostr-schnorr", "principal": "npub1…", "value": "…" } // BIP-340 schnorr sig over canonical JSON
 }
 ```
 
@@ -113,10 +113,11 @@ Design decisions baked into the schema:
   that would have made Coinkite's pre-hack audit auditable after the fact.
 - **`status` requires a human.** Raw model output is never published as a finding; a named,
   key-holding validator triages first. This is the anti-slop gate curl never had.
-- **Signing: SSH-key signatures (`ssh-keygen -Y sign`) + optional Nostr key.** Every dev
-  has an SSH key; GitHub exposes them at `github.com/<user>.keys` for out-of-band
-  verification; Nostr npubs use secp256k1, culturally native to Bitcoin. Avoid PGP-only
-  (adoption killer). CI verifies signatures on every PR.
+- **Signing: Nostr schnorr signatures (secp256k1) — the same key signs the attestation and
+  publishes it on Nostr, unifying layers 1 and 3.** BIP-340 schnorr over secp256k1, the
+  Bitcoin/Nostr curve — culturally native to Bitcoin and avoids a second identity system.
+  The signer's npub is cross-checked out-of-band via their Nostr profile / a NIP-05. Avoid
+  PGP-only (adoption killer). CI verifies signatures on every PR.
 
 ### Responsible disclosure — the non-negotiable rule
 
@@ -165,17 +166,20 @@ opensourcecheck/
 ├── attestations/coldcard/firmware/…    # one dir per target project
 ├── prompts/                            # versioned, named audit prompt packs
 ├── transcripts/                        # full run logs (or hashes + torrent/IPFS refs for big ones)
-├── auditors/                           # one file per auditor: keys, npub, contact
+├── auditors/                           # one file per auditor: keys (npub), contact
 ├── policy/DISCLOSURE.md                # the rules in §3
 ├── tools/                              # CLI: osc new-run, osc sign, osc verify
+│                                        # tools/lib/ holds shared Nostr signing primitives
 └── .github/workflows/validate.yml      # schema + signature + dup checks on every PR
 ```
 
-The **`osc` CLI** (small, Rust or TypeScript) is the adoption lever: `osc run` scaffolds an
-attestation from a Claude Code / codex-style session, `osc sign` signs it with the user's
-SSH key, `osc verify` lets *anyone* validate the whole registry offline in seconds. The
-"everyone can check and validate" requirement is satisfied by plain git + this CLI — no
-server trust needed.
+The **`osc` CLI** (Node/JS) is the adoption lever: `osc new-run` scaffolds an attestation
+from a Claude Code / codex-style session, `osc sign` signs it with the user's Nostr key
+(schnorr/secp256k1), `osc verify` lets *anyone* validate the whole registry offline in
+seconds. It has one audited crypto dependency (`@noble/curves`, `@scure/base`) installed via
+`npm ci` — verification is still fully offline and trusts no server, it just isn't
+zero-install. The "everyone can check and validate" requirement is satisfied by plain git +
+this CLI.
 
 ## 5. Trust & governance
 

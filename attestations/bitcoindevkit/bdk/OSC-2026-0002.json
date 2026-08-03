@@ -31,9 +31,8 @@
     "contact": "demo@opensourcecheck.org"
   },
   "signature": {
-    "alg": "ssh-ed25519",
-    "principal": "demo@opensourcecheck.org",
-    "namespace": "opensourcecheck-attestation/v0",
-    "value": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAADMAAAALc3NoLWVkMjU1MTkAAAAgsf5xVumJB9Ko929ryS/YNTW7Ow\ncF33GTmkozfWikH98AAAAeb3BlbnNvdXJjZWNoZWNrLWF0dGVzdGF0aW9uL3YwAAAAAAAA\nAAZzaGE1MTIAAABTAAAAC3NzaC1lZDI1NTE5AAAAQCs9JCGvWrbgrsNKcjukwy0FCBkT12\ndRFRmb84zKwxLo6vfOz4o68oEfQd9Dp7qoDv67VqF8bDrhkBsOfyl8UAs=\n-----END SSH SIGNATURE-----\n"
+    "alg": "nostr-schnorr",
+    "principal": "npub1n9mgw84wlks5vnwm2r32jaq5nlnwcjeveae0jeqjnfzcdy8ezlrsll2tdd",
+    "value": "44ca479f47c19ed16e23106b7f8f847236d8729e59b1e69492649520069b6bec4addbfbb677c2b955ef87804690c24fd94bc077e169ff958b159f46574522bd3"
   }
 }

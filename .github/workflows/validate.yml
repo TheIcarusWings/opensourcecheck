@@ -20,6 +20,9 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Install crypto deps (@noble/curves, @scure/base)
+        run: npm ci
+
       - name: Trust-core self-test (sign / verify / reject tamper)
         run: bash tools/osc/test/run.sh
 

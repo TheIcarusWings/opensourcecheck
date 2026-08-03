@@ -1,10 +1,14 @@
 {
   "name": "@opensourcecheck/osc",
-  "version": "0.1.0",
-  "description": "Sign and verify OpenSourceCheck attestations. Zero runtime dependencies; needs Node >= 18 and OpenSSH.",
+  "version": "0.2.0",
+  "description": "Sign and verify OpenSourceCheck attestations with a Nostr key (BIP-340 schnorr). Needs Node >= 18.",
   "type": "module",
   "bin": { "osc": "./osc.mjs" },
   "engines": { "node": ">=18" },
   "license": "MIT",
-  "files": ["osc.mjs"]
+  "dependencies": {
+    "@noble/curves": "^1.9.7",
+    "@scure/base": "^1.2.6"
+  },
+  "files": ["osc.mjs", "../lib/nostr.mjs"]
 }

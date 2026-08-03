@@ -32,12 +32,15 @@ the fact.
 ## Verify it yourself
 
 Verification is fully offline and trusts no server. It checks the JSON structure of each
-attestation and validates its SSH signature against the public keys registered under
-`auditors/` — nothing else is required.
+attestation and validates its Nostr (BIP-340 schnorr / secp256k1) signature against the
+npubs registered under `auditors/`. The CLI has one audited crypto dependency
+(`@noble/curves`, `@scure/base`) — not zero-install, but still no network calls and no
+trusted third party.
 
 ```bash
 git clone https://github.com/TheIcarusWings/opensourcecheck.git
 cd opensourcecheck
+npm ci
 node tools/osc/osc.mjs verify --all
 ```
 
@@ -50,12 +53,14 @@ node tools/osc/osc.mjs verify attestations/coldcard/firmware/OSC-2026-0001.json
 ## Submit an attestation
 
 ```bash
+npm ci
+node tools/osc/osc.mjs keygen                  # first time only: generate npub + nsec
 node tools/osc/osc.mjs new-run > my.json
 # edit my.json: target repo/commit, run details, findings, verdict, auditor id
-node tools/osc/osc.mjs sign my.json --key ~/.ssh/id_ed25519 --principal you@example.com
+node tools/osc/osc.mjs sign my.json --nsec nsec1...
 ```
 
-Register your public key by adding `auditors/<you>.json`, then open a PR. Full step-by-step
+Register your npub by adding `auditors/<you>.json`, then open a PR. Full step-by-step
 instructions, field-by-field, are in [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## How trust works
@@ -63,8 +68,9 @@ instructions, field-by-field, are in [CONTRIBUTING.md](./CONTRIBUTING.md).
 OSC is a web of trust, not a gatekeeper. Anyone can submit an attestation, and CI enforces
 only *form*: schema validity, a real signature, a real (non-branch) commit. It does not rank
 findings or decide what's true. Weight comes from an auditor's track record — validated
-findings, false-positive rate, disputes — visible in their history. Maintainers merge PRs and
-enforce the disclosure policy; they do not rank code safety. See
+findings, false-positive rate, disputes — visible in their history. An auditor's identity is
+cross-checked via their Nostr profile or a NIP-05, not a centralized key directory.
+Maintainers merge PRs and enforce the disclosure policy; they do not rank code safety. See
 [policy/GOVERNANCE.md](./policy/GOVERNANCE.md) and [policy/DISCLOSURE.md](./policy/DISCLOSURE.md).
 
 ## Responsible disclosure
@@ -84,8 +90,9 @@ opensourcecheck/
 ├── attestations/<org>/<repo>/OSC-YYYY-NNNN.json  # one file per audit run
 ├── prompts/                            # versioned, named audit prompt packs
 ├── transcripts/                        # full run transcripts (or refs for large ones)
-├── auditors/                           # one file per auditor: keys, npub, contact
+├── auditors/                           # one file per auditor: keys (npub), contact
 ├── tools/osc/                          # the osc CLI
+├── tools/lib/                          # shared Nostr signing primitives (nostr.mjs)
 ├── tools/ci/                           # registry-wide CI invariant checks
 ├── policy/                             # GOVERNANCE.md, DISCLOSURE.md
 ├── site/                               # static viewer (Layer 2)

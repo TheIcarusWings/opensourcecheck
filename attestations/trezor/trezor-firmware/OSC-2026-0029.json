@@ -1,0 +1,40 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0029",
+  "target": {
+    "repo": "https://github.com/trezor/trezor-firmware",
+    "commit": "2b1938cc4d0d1c00d0c484a8b794e7758fe89f5b"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "5a3fdbaa28139db166b51fc105536f91e89ca2bff9051ed267fbd162e3a87985",
+    "transcript_uri": "transcripts/OSC-2026-0029.md",
+    "scope": "Independent tx-authorization audit of trezor-firmware at 2b1938cc. In scope: Bitcoin SignTx change detection (ChangeDetector + seed-derived scripts), prevtx amount verification, fee thresholds, stream consistency digests (h_tx_check), multisig cosigner fingerprint, get_address derivation, vendor-header firmware sig checks. Out of scope: altcoin-specific forks beyond base Bitcoin signer, CoinJoin policy depth, USB framing parsers, UI chrome. Same commit as OSC-2026-0027 entropy run; different lens.",
+    "duration_minutes": 60,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0029-F1",
+      "severity": "none-found",
+      "status": "unreviewed",
+      "summary": "No transaction-authorization defect found in scope. Change outputs require seed-derived scriptPubKey plus multi-factor match (wallet path, script type, full multisig fingerprint); failures become external outputs shown to the user. Non-taproot-only flows re-verify input amounts against previous transactions. Fee over maxfee threshold requires confirmation. Signing re-checks stream digests so approval and sign cannot diverge silently.",
+      "location": "core/src/apps/bitcoin/sign_tx/change_detector.py:45-68; core/src/apps/bitcoin/sign_tx/bitcoin.py:241-278,543-551,961-982; core/src/apps/bitcoin/sign_tx/approvers.py:345-362; core/src/apps/bitcoin/multisig.py:15-50; core/src/apps/bitcoin/sign_tx/tx_info.py:53-93"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "opensourcecheck@proton.me (github.com/TheIcarusWings)"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "7df46d251f8ba00a66241e0e811f339de9ca82663afc23d4b440046a7afa459173795a10cdef1bb7316d96809d0cb563c26f366be7156fc72632272cf9697b11"
+  }
+}

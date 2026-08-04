@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0031",
+  "target": {
+    "repo": "https://github.com/trezor/trezor-firmware",
+    "commit": "2b1938cc4d0d1c00d0c484a8b794e7758fe89f5b",
+    "subpath": "core/src/apps/bitcoin/sign_tx/",
+    "release_tag": "HEAD (2026-08-04)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-fable-5",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "8034f59a73c906bb194e44fafe0ec0678dedf5ca81280903e3ad086c9f174956",
+    "transcript_uri": "transcripts/OSC-2026-0031.md",
+    "scope": "Transaction-authorization class at HEAD 2b1938cc - second lens on the target audited for entropy in OSC-2026-0025. EXAMINED: the change-output decision (sign_tx/change_detector.py) and change-address derivation (sign_tx/bitcoin.py output_derive_script). EXPLICITLY NOT EXAMINED: input amount provenance and fee sanity (Trezor is the origin of the 2018 SegWit fee-attack advisory and its current input verification deserves its own record), the PrevTx streaming/hashing path, SignMessage, Decred and other altcoin implementations, the authorization.py CoinJoin path, and firmware update integrity.",
+    "duration_minutes": 40,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0031-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No defect found in scope; the strongest change-output construction of the five signers audited under this pack, because it removes the attack surface rather than defending it. In output_derive_script (sign_tx/bitcoin.py ~961-982) the device OVERWRITES txo.address with an address derived from its own keychain (self.keychain.derive(txo.address_n)) for any output carrying address_n. Where Keystone3 and SeedSigner compare a host-supplied address against a derived one and reject on mismatch, Trezor never consults the host's address for a change output at all - the host can only supply a PATH, so there is nothing to spoof. output_is_change (sign_tx/change_detector.py ~45-68) then gates change status behind seven conjoined conditions: multisig fingerprint, wallet path prefix and script type must all match the INPUTS, plus path depth, change-chain index <= 1, last element <= 1,000,000, and amount > 0 - so an attacker cannot nominate an arbitrary in-wallet path either. Notable beyond this pack's scope: multisig outputs using different derivation paths per xpub are refused outright, with an in-source comment explaining it prevents a compromised host randomising address indices and ransoming the user for the paths; the 1,000,000 bound exists so a lost path stays brute-forceable. That is threat modelling well past the change-spoofing class.",
+      "location": "core/src/apps/bitcoin/sign_tx/bitcoin.py:961 (output_derive_script, device-derived address), core/src/apps/bitcoin/sign_tx/change_detector.py:45 (seven-condition gate + ransom mitigation)",
+      "cwe": "CWE-345"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "opensourcecheck@proton.me (github.com/TheIcarusWings)"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "1fa586cae8471aef13826f68d68d467fbcfd006e0edf5f3392bb474077d37d473f6d8f05e24b1b776ae381363c6aa0103a5fc1a7dadcc8a302fa2a3d1bcbbec4"
+  }
+}

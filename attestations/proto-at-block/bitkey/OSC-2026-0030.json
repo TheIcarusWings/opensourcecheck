@@ -1,0 +1,40 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0030",
+  "target": {
+    "repo": "https://github.com/proto-at-block/bitkey",
+    "commit": "cf16705543d0c66ff982635733d380944cc2677d"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "d5da107f471190a1b5a9a94137fdf34c2ea41cb94048626a88b67e5b0a6a65f0",
+    "transcript_uri": "transcripts/OSC-2026-0030.md",
+    "scope": "Independent tx-authorization audit of bitkey at cf167055. In scope: w3-core raw_tx and streaming sign flows, wallet_change_output_belongs_to_policy (full 2-of-3 P2WSH SPK re-derive), session commitment hash at confirm vs sign, BIP-143 amount binding, fee/send display, receive address derivation, FWUP verify-before-commit. Out of scope: mobile app UI, server cosigner, non-w3-core images. Same commit as OSC-2026-0028 entropy run; different lens.",
+    "duration_minutes": 60,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0030-F1",
+      "severity": "none-found",
+      "status": "unreviewed",
+      "summary": "No transaction-authorization defect found in scope on production w3-core signing. Change outputs flagged with a derivation path are re-derived as 2-of-3 P2WSH from the stored keyset and must match scriptPubKey or signing is refused. Session hash binds displayed tx to signed bytes. Input amounts bind via BIP-143; fee is computed and shown. Firmware updates verify signature before committing signature to flash.",
+      "location": "firmware/app/tasks/key_manager/src/w3-core/key_manager_task_port.c:1858-1874,2739-2776,885-892; firmware/lib/wallet/src/wallet_address.c:89-120,203-226; firmware/lib/psbt/src/psbt.c:127-138,452-457; firmware/lib/fwup/src/fwup.c:305-330"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "opensourcecheck@proton.me (github.com/TheIcarusWings)"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "96a07a9214e952fe60c2ddeaeb6c91dab0dc9b2c292b48c0b89974dc9da24b247392a73c8af5fca13b92dfdc2328bfb98f6093abcbe2a52a0644f9bb4e0d4b34"
+  }
+}

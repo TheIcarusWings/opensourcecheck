@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0032",
+  "target": {
+    "repo": "https://github.com/proto-at-block/bitkey",
+    "commit": "cf16705543d0c66ff982635733d380944cc2677d",
+    "subpath": "firmware/lib/policy/policy.c",
+    "release_tag": "HEAD (2026-08-02)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-fable-5",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "445a3c82e427a7fc2ea646d8961a828160fb750d1134502e003eb300a39e1532",
+    "transcript_uri": "transcripts/OSC-2026-0032.md",
+    "scope": "Transaction-authorization class on the DEVICE FIRMWARE at HEAD cf167055 - second lens on the target audited for entropy in OSC-2026-0026. EXAMINED: wallet_change_output_belongs_to_policy and its P2WSH derivation helper, its call sites in the w3-core signing path, the presence and role of the PSBT library, and the fault-injection-hardened policy gate. NOT EXAMINED: PSBT parser robustness on malformed input, the session-commitment hash between confirmation and signing, fee computation and display, BIP-143 amount binding, firmware update verification, and the mobile app and server co-signer. See OSC-2026-0030 (grok-4.5), which covers several of these. NOTE: this record was CORRECTED before publication - an earlier draft wrongly concluded the firmware does not parse transactions; see the transcript.",
+    "duration_minutes": 35,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0032-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No defect found in scope. CORRECTED RECORD: an earlier draft of this audit wrongly concluded the Bitkey hardware does not parse transactions and that change-output checks were not applicable. That was false - it came from reading bip32_sign_with_policy (a digest-signing primitive) and generalising to the whole product. An independent grok-4.5 audit of the same commit (OSC-2026-0030) contradicted it and was right; the error was caught and corrected before signing. What the firmware actually does: firmware/lib/psbt/src/psbt.c is a real PSBT implementation, and wallet_change_output_belongs_to_policy (firmware/lib/wallet/src/wallet_address.c) DERIVES the expected P2WSH scriptPubKey from the stored keyset via wallet_derive_p2wsh_scriptpubkey and compares it to the one supplied, called from the w3-core signing path at key_manager_task_port.c:1867 and :2766. Because Bitkey is 2-of-3, deriving the P2WSH script involves the whole keyset, so this also closes cosigner substitution. It fails closed on every branch: null or zero-length inputs, failed derivation, and length mismatch all return false, with no path that defaults to accepting. The comparison uses memcmp_s rather than memcmp, with an in-source comment noting it avoids leaking the expected scriptPubKey through timing - a side-channel consideration in change validation that no other wallet in this series shows. Separately, bip32_sign_with_policy is hardened against fault injection (secure_bool_t, volatile, NO_OPTIMIZE, SECURE_IF_FAILIN on the denial branch so a glitch lands in refusal), a threat model no other wallet here addresses in code.",
+      "location": "firmware/lib/wallet/src/wallet_address.c (wallet_change_output_belongs_to_policy), firmware/app/tasks/key_manager/src/w3-core/key_manager_task_port.c:1867,2766 (call sites), firmware/lib/psbt/src/psbt.c, firmware/lib/policy/policy.c (FI-hardened gate)",
+      "cwe": "CWE-345"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "opensourcecheck@proton.me (github.com/TheIcarusWings)"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "09f4a5097a8cf67800bad191597c67750a0197a2334e1a22ebf06aced238ee1d179395a8be0c837a40e2c765037a8d400a6c35e319ae1aa0d690d3920e111615"
+  }
+}

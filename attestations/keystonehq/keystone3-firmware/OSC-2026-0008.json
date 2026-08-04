@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0008",
+  "target": {
+    "repo": "https://github.com/KeystoneHQ/keystone3-firmware",
+    "commit": "31f1fa88a522f492b9ad6260c4c3e316bd209b32",
+    "subpath": "rust/apps/bitcoin/src/transactions/",
+    "release_tag": "HEAD (2026-08-04)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-fable-5",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "ae380d4f040e847cf4ae6399b8631e6da323f09dc7a83f3b954ec3255b85da79",
+    "transcript_uri": "transcripts/OSC-2026-0008.md",
+    "scope": "The transaction-authorization loss-of-funds class at HEAD 31f1fa88 - a SECOND, different lens on a target already audited for entropy in OSC-2026-0005, not a replacement for it. In scope: change-output verification for single-sig and multisig, cosigner substitution, input-value provenance and the SegWit fee attack, fee computation and large-fee warnings. NOT in scope: firmware update/rollback integrity, the C GUI rendering layer, QR/USB transport parsers, entropy (covered separately by OSC-2026-0005), and non-Bitcoin chains.",
+    "duration_minutes": 45,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0008-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No defect substantiated in scope; change-output handling is correctly independent. Single-sig: the device re-derives the public key from its OWN xpub and rebuilds the expected script per BIP-44/49/84, returning None (not mine) if it does not equal tx_out.script_pubkey - so an attacker-labelled 'change' output is displayed as a payment to a stranger rather than hidden. Multisig: the full m-of-n script is rebuilt from ALL cosigner xpubs held in the stored wallet config (with the PSBT's fingerprint set required to equal the wallet's), closing cosigner substitution. Input values are cross-checked between witness_utxo and non_witness_utxo when both are present, failing with InputValueTampered on mismatch, and a dedicated check cites the Trezor fee-attack advisory by URL. Fee is shown, inputs<outputs is rejected absent ANYONECANPAY, and a large-fee warning fires above 5,000,000 sats or 100 sat/vByte. OBSERVATION, not a finding: non_witness_utxo is not required, so an input supplying only witness_utxo has its amount taken on trust. This is deliberately NOT reported as a vulnerability - for SegWit v0 the amount is committed in the BIP-143 sighash, so a lie yields a signature invalid for the real UTXO and no funds move; the historical Trezor attack required combining signatures across separate sessions with inconsistent declared amounts, which was not constructed against this firmware and would need dynamic testing to settle. Confidence it is not a straightforward vulnerability: high. Confidence it is safe under all multi-session flows: medium.",
+      "location": "rust/apps/bitcoin/src/transactions/psbt/wrapped_psbt.rs:1086 (single-sig), :998 (multisig), :497 (get_input_prevout), :591 (check_my_input_value_tampered); rust/apps/bitcoin/src/transactions/parsed_tx.rs:237 (fee thresholds)",
+      "cwe": "CWE-345"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "7a3dd346a14c5eebcbf2d1e5a789d15a8d2bd3d6c7344166d956837ce15c075db784b7f560d138c6f22ec22373fbe9e57ca7f871843f14675c61d3b1dbb83236"
+  }
+}

@@ -12,7 +12,7 @@
     "model": "claude-opus-4-8",
     "harness": "claude-code",
     "prompts_ref": "prompts/entropy-rng-audit-v1.md",
-    "transcript_sha256": "b078775a188d533396dc180490a65944e4ff2a785ec11f409ddd4113b5292e5f",
+    "transcript_sha256": "666d4d9a72d43915615b92e903e3f2c3abf964a332a6f37f2d4062d0f41553a7",
     "transcript_uri": "transcripts/OSC-2026-0003.md",
     "scope": "The entropy paths that produce a BIP-39 mnemonic on this airgapped signer: dice rolls and coin flips (helpers/mnemonic_generation.py) and camera-image entropy (views/tools_views.py). In scope: the entropy-extraction method (SHA-256 over user input), dice-to-bits modulo bias, entropy sizing/truncation, and memory hygiene of seed material. NOT in scope: PSBT/signing, QR encode/decode, the camera driver, the embit/bip39 dependency internals, or the physical unpredictability of any specific user's dice/image.",
     "duration_minutes": 25,
@@ -30,12 +30,14 @@
   ],
   "verdict": "clean-run",
   "auditor": {
-    "id": "opensourcecheck-demo",
-    "name": "OpenSourceCheck Demo Key"
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
   },
   "signature": {
     "alg": "nostr-schnorr",
-    "principal": "npub1n9mgw84wlks5vnwm2r32jaq5nlnwcjeveae0jeqjnfzcdy8ezlrsll2tdd",
-    "value": "053d5803e078c0de75d3d8953d035890bc9e2af6b566f90f7271d795c4a13709fd683587e38a1e3be5b2c4b3383e7f9966c547a172710461e2f2dcfa31e8818d"
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "a0dd6e807d6578c21ec087addf3a3573b3b4adf455cb8738e6a7d4f99cab15562ed2965056d7f182ea081a88cbd9e864811c815145711bde63a59948fdd35b96"
   }
 }

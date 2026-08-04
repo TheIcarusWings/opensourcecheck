@@ -12,7 +12,7 @@
     "model": "claude-opus-4-8",
     "harness": "claude-code",
     "prompts_ref": "prompts/entropy-rng-audit-v1.md",
-    "transcript_sha256": "6cbc639790fb2626f9e12010e0ee896ac3e2858b3a15a0cfdcc291eb1756d9bb",
+    "transcript_sha256": "54b85bcb9cff04d66b9a6c023e51a6a29dab94f3cd439f8f9d40d63f87616591",
     "transcript_uri": "transcripts/OSC-2026-0002.md",
     "scope": "The entropy/RNG path feeding BIP-39 mnemonic and key generation in src/keys/ (mod.rs GeneratableKey trait; bip39.rs Mnemonic impl). Traced every path from generate() to the bytes that become a mnemonic, at HEAD commit fc88144f. In scope: CSPRNG selection, the CryptoRng bound on generate_with_aux_rand, entropy sizing and possible truncation/reuse. NOT in scope: descriptor parsing, PSBT signing, chain sync, transaction building, FFI bindings, or the correctness of the upstream `rand`/`bip39` crates themselves.",
     "duration_minutes": 20,
@@ -30,12 +30,14 @@
   ],
   "verdict": "clean-run",
   "auditor": {
-    "id": "opensourcecheck-demo",
-    "name": "OpenSourceCheck Demo Key"
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
   },
   "signature": {
     "alg": "nostr-schnorr",
-    "principal": "npub1n9mgw84wlks5vnwm2r32jaq5nlnwcjeveae0jeqjnfzcdy8ezlrsll2tdd",
-    "value": "75e5912e9f70a5ba5326a5c27d1c4334ba1ef518e265b06c47f9fe455dd20631bbbbe51a3e53a4deaa8ff288b75b72dd0e6b0830ffac51fe49a144539483cf31"
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "c7a0e41b1a9cde5b5834e1d99ad3475678b9f6004189c82235bfe76731b1f8e9181de7814e2b3ba7b549ee564ef7bc98dcc1b03cb798664365bfa542f2ec964a"
   }
 }

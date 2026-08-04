@@ -1,0 +1,47 @@
+name: Audit target request
+description: Nominate an open-source project (Bitcoin-first) for an LLM security audit.
+title: "[audit] <project name>"
+labels: ["audit-target"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this to add a project to the audit wishlist. Anyone can pick it up and submit a
+        signed attestation. This is a *request to check*, not a claim that anything is wrong.
+  - type: input
+    id: repo
+    attributes:
+      label: Repository URL
+      placeholder: https://github.com/org/repo
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or release to audit (optional)
+      description: A full 40-char SHA or a release tag. Leave blank for "latest HEAD".
+  - type: dropdown
+    id: area
+    attributes:
+      label: Highest-priority area
+      options:
+        - Seed / key / entropy generation
+        - Signing (nonce generation, PSBT)
+        - Descriptor / address derivation
+        - Network / message parsing
+        - Build / supply-chain / reproducibility
+        - Whole project
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why this target
+      description: Who uses it, how much value it secures, any prior audit history.
+    validations:
+      required: true
+  - type: input
+    id: security_contact
+    attributes:
+      label: Project security contact (if known)
+      description: So findings ≥ medium can be disclosed responsibly before publication.

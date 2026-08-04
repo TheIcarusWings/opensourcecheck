@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Submit an attestation (not an issue)
+    url: https://github.com/TheIcarusWings/opensourcecheck/blob/main/CONTRIBUTING.md
+    about: To publish an audit result, open a pull request with a signed attestation — see CONTRIBUTING.md.
+  - name: Report a vulnerability responsibly
+    url: https://github.com/TheIcarusWings/opensourcecheck/blob/main/policy/DISCLOSURE.md
+    about: Do NOT open a public issue for a finding in live software. Read the disclosure policy first.

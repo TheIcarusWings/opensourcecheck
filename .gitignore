@@ -12,3 +12,9 @@ id_rsa
 # Launch drafts / private runbooks are kept out of the public repo
 docs/launch/
 docs/MIGRATION.md
+
+# Local session memory / private disclosure material — never commit.
+# Unredacted findings under embargo live here; publishing one would breach
+# policy/DISCLOSURE.md and hand attackers a live vulnerability.
+.local/
+private/

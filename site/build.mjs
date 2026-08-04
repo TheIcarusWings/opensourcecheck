@@ -56,72 +56,154 @@ const PAGE = (title, body, base = "") => `<!doctype html>
 <footer><p>OpenSourceCheck records what was <em>checked</em> and what came back. It never asserts code is safe — a clean AI run can miss real bugs. Every entry is a signed, human-validated attestation; verify offline with <code>node tools/osc/osc.mjs verify --all</code>.</p></footer>
 </body></html>`;
 
+// Design system: shadcn/ui token scale + component anatomy, implemented in plain CSS.
+// shadcn itself is React + Tailwind + Radix; this registry stays dependency-free on purpose
+// (a supply-chain-security project should not ship a supply chain), so we port the system
+// rather than the packages: same oklch tokens, radius scale, focus rings, and components.
 const CSS = `
-:root{--bg:#0d0f14;--panel:#151922;--line:#232a38;--fg:#e8ecf3;--dim:#8b96a8;--accent:#f7931a;
-/* Severity hues are tuned for comparable luminance so "critical" never reads quieter than
-   "medium" on a dark surface. --info must stay distinct from --dim: one color, one meaning. */
---crit:#ff8a8a;--high:#ff9b3d;--med:#f7c948;--low:#5bc0eb;--info:#7dabdc;--none:#3ecf8e}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);
-font:15px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
--webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+:root{
+  --radius:0.625rem;
+  --radius-sm:calc(var(--radius) - 4px);
+  --radius-md:calc(var(--radius) - 2px);
+  --radius-lg:var(--radius);
+  --radius-xl:calc(var(--radius) + 4px);
+  /* shadcn dark scale (oklch), with Bitcoin orange as the brand primary. */
+  --background:oklch(0.145 0 0);
+  --foreground:oklch(0.985 0 0);
+  --card:oklch(0.205 0 0);
+  --card-foreground:oklch(0.985 0 0);
+  --muted:oklch(0.269 0 0);
+  --muted-foreground:oklch(0.708 0 0);
+  --accent:oklch(0.371 0 0);
+  --accent-foreground:oklch(0.985 0 0);
+  --border:oklch(1 0 0 / 10%);
+  --input:oklch(1 0 0 / 15%);
+  --ring:oklch(0.556 0 0);
+  --primary:oklch(0.745 0.163 60.5);
+  --primary-foreground:oklch(0.205 0 0);
+  --destructive:oklch(0.704 0.191 22.216);
+  /* Severity hues at comparable lightness so "critical" never reads quieter than "medium",
+     and none of them collides with --muted-foreground. One color, one meaning. */
+  --sev-critical:oklch(0.704 0.191 22.216);
+  --sev-high:oklch(0.75 0.162 60);
+  --sev-medium:oklch(0.855 0.155 95);
+  --sev-low:oklch(0.78 0.13 220);
+  --sev-info:oklch(0.72 0.10 285);
+  --sev-none:oklch(0.765 0.16 158);
+}
+*{box-sizing:border-box;border-color:var(--border)}
+body{margin:0;background:var(--background);color:var(--foreground);
+font:15px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+font-feature-settings:"rlig" 1,"calt" 1}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--ring);outline-offset:2px;border-radius:var(--radius-sm)}
 .skip-link{position:absolute;inset-inline-start:-999px;top:0}
-.skip-link:focus{inset-inline-start:16px;top:12px;z-index:20;background:var(--panel);
-color:var(--fg);padding:10px 14px;border:1px solid var(--line);border-radius:8px}
-header.site{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:space-between;align-items:center;
-padding:14px 20px;border-bottom:1px solid var(--line);position:sticky;top:0;
-background:rgba(13,15,20,.85);backdrop-filter:blur(8px)}
-.brand{font-weight:700;font-size:19px;color:var(--fg)}.brand span{color:var(--accent)}
-nav{display:flex;flex-wrap:wrap;gap:4px 20px}
-nav a{color:var(--dim);font-size:14px;padding:4px 0}nav a:hover{color:var(--fg)}
-main{max-width:1060px;margin:0 auto;padding:36px 24px 60px}
-.hero{padding:22px 0 30px;border-bottom:1px solid var(--line);margin-bottom:28px}
-/* Headings and prose can contain unbreakable tokens (repo URLs, 40-char SHAs, npubs),
-   so they must be allowed to break rather than forcing the page to scroll sideways. */
-.hero h1{font-size:clamp(24px,5vw,30px);line-height:1.15;margin:0 0 10px;letter-spacing:-.4px;
-text-wrap:balance;overflow-wrap:break-word}
-.hero p{color:var(--dim);max-width:70ch;margin:0 0 8px;text-wrap:pretty}
-.disclaimer{background:#1c1408;border:1px solid #3a2a0e;border-left:3px solid var(--accent);
-padding:12px 16px;border-radius:8px;color:#f0d9b0;font-size:13.5px;margin-top:16px;max-width:70ch}
-h2{font-size:15px;text-transform:uppercase;letter-spacing:.09em;color:var(--dim);margin:34px 0 14px}
-/* Wide data tables scroll inside their own container instead of forcing the page to scroll. */
-.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
-table{width:100%;min-width:620px;border-collapse:collapse;font-size:14px}
-th{text-align:left;color:var(--dim);font-weight:600;font-size:12px;text-transform:uppercase;
-letter-spacing:.05em;padding:0 12px 10px;border-bottom:1px solid var(--line)}
-td{padding:13px 12px;border-bottom:1px solid var(--line);vertical-align:top}
-tr:hover td{background:var(--panel)}
-.proj{font-weight:600}.proj a{color:var(--fg)}
-.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;color:var(--dim);
-overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
-.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:600;
-text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
-.sev-critical{background:rgba(255,138,138,.2);color:var(--crit);box-shadow:inset 0 0 0 1px rgba(255,138,138,.35)}
-.sev-high{background:rgba(255,155,61,.15);color:var(--high)}
-.sev-medium{background:rgba(247,201,72,.14);color:var(--med)}
-.sev-low{background:rgba(91,192,235,.14);color:var(--low)}
-.sev-info{background:rgba(125,171,220,.14);color:var(--info)}
-.sev-none-found{background:rgba(62,207,142,.13);color:var(--none)}
-.verdict{font-size:12.5px;color:var(--dim)}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:22px 24px;margin:0 0 18px}
+.skip-link:focus{inset-inline-start:16px;top:12px;z-index:20;background:var(--card);
+color:var(--card-foreground);padding:10px 14px;border:1px solid var(--border);border-radius:var(--radius-md)}
+
+/* ---- header / nav ---- */
+header.site{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;gap:8px 20px;
+align-items:center;justify-content:space-between;padding:12px 20px;
+border-bottom:1px solid var(--border);background:color-mix(in oklab,var(--background) 80%,transparent);
+backdrop-filter:blur(12px)}
+.brand{font-weight:600;font-size:17px;letter-spacing:-.01em;color:var(--foreground)}
+.brand span{color:var(--primary)}
+nav{display:flex;flex-wrap:wrap;gap:2px 6px}
+nav a{color:var(--muted-foreground);font-size:14px;font-weight:500;padding:6px 10px;
+border-radius:var(--radius-md);transition-property:color,background-color;transition-duration:150ms}
+nav a:hover{color:var(--foreground);background:var(--muted)}
+
+main{max-width:1100px;margin:0 auto;padding:40px 24px 64px}
+
+/* ---- typography ---- */
+.hero{padding-bottom:28px;border-bottom:1px solid var(--border);margin-bottom:32px}
+.hero h1{font-size:clamp(26px,5vw,34px);line-height:1.15;margin:0 0 12px;
+letter-spacing:-.025em;font-weight:600;text-wrap:balance;overflow-wrap:break-word}
+.hero p{color:var(--muted-foreground);max-width:70ch;margin:0 0 8px;text-wrap:pretty}
+h2{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;
+color:var(--muted-foreground);margin:36px 0 14px}
+.mono{font-family:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;
+color:var(--muted-foreground);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+.muted{color:var(--muted-foreground)}
+.separator{height:1px;background:var(--border);border:0;margin:28px 0}
+
+/* ---- card ---- */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-xl);
+padding:24px;margin:0 0 20px;box-shadow:0 1px 2px 0 oklch(0 0 0 / 0.28)}
+.card-title{font-size:16px;font-weight:600;letter-spacing:-.01em;margin:0 0 4px}
+.card-description{color:var(--muted-foreground);font-size:14px;margin:0 0 12px}
 .card p,.finding p{max-width:70ch;text-wrap:pretty;overflow-wrap:anywhere}
-.kv{display:grid;grid-template-columns:minmax(120px,170px) minmax(0,1fr);gap:8px 18px;font-size:14px;margin:14px 0}
-.kv dt{color:var(--dim)}.kv dd{margin:0;overflow-wrap:anywhere}
-.finding{border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:12px 0;background:#11151d}
-.finding h3{margin:0 0 6px;font-size:15px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.status{font-size:11px;color:var(--dim);border:1px solid var(--line);padding:1px 7px;border-radius:6px}
-.muted{color:var(--dim)}
-.pill{display:inline-block;font-size:12px;color:var(--dim);border:1px solid var(--line);
-border-radius:6px;padding:1px 8px;white-space:nowrap}
-footer{border-top:1px solid var(--line);color:var(--dim);font-size:13px;padding:26px 24px;max-width:1060px;margin:0 auto}
-footer em{color:var(--fg);font-style:normal}
-.count{display:inline-flex;gap:6px;flex-wrap:wrap}
+
+/* ---- table ---- */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;
+border:1px solid var(--border);border-radius:var(--radius-lg)}
+table{width:100%;min-width:620px;border-collapse:collapse;font-size:14px;caption-side:bottom}
+thead tr{border-bottom:1px solid var(--border)}
+th{height:44px;padding:0 16px;text-align:left;vertical-align:middle;font-weight:500;
+font-size:12.5px;color:var(--muted-foreground)}
+td{padding:14px 16px;vertical-align:top;border-bottom:1px solid var(--border)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr{transition:background-color 150ms}
+tbody tr:hover{background:color-mix(in oklab,var(--muted) 50%,transparent)}
+.proj{font-weight:500}.proj a{color:var(--foreground)}
+.proj a:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* ---- badge ---- */
+.badge{display:inline-flex;align-items:center;gap:4px;border:1px solid transparent;
+padding:2px 10px;border-radius:999px;font-size:11.5px;font-weight:600;line-height:1.4;
+text-transform:uppercase;letter-spacing:.03em;white-space:nowrap}
+.badge-outline{color:var(--muted-foreground);border-color:var(--border);background:transparent;
+text-transform:none;letter-spacing:0;font-weight:500;font-size:12px}
+.sev-critical{color:var(--sev-critical);background:color-mix(in oklab,var(--sev-critical) 18%,transparent);
+border-color:color-mix(in oklab,var(--sev-critical) 35%,transparent)}
+.sev-high{color:var(--sev-high);background:color-mix(in oklab,var(--sev-high) 15%,transparent)}
+.sev-medium{color:var(--sev-medium);background:color-mix(in oklab,var(--sev-medium) 15%,transparent)}
+.sev-low{color:var(--sev-low);background:color-mix(in oklab,var(--sev-low) 15%,transparent)}
+.sev-info{color:var(--sev-info);background:color-mix(in oklab,var(--sev-info) 15%,transparent)}
+.sev-none-found{color:var(--sev-none);background:color-mix(in oklab,var(--sev-none) 14%,transparent)}
+.verdict{font-size:12.5px;color:var(--muted-foreground);margin-top:4px}
+.pill{display:inline-block;font-size:12px;color:var(--muted-foreground);
+border:1px solid var(--border);border-radius:var(--radius-md);padding:2px 9px;white-space:nowrap}
+
+/* ---- alert ---- */
+.alert{position:relative;display:grid;gap:4px;padding:16px;border-radius:var(--radius-lg);
+border:1px solid color-mix(in oklab,var(--primary) 30%,transparent);
+background:color-mix(in oklab,var(--primary) 8%,transparent);font-size:14px;max-width:78ch;margin-top:20px}
+.alert-title{font-weight:600;letter-spacing:-.005em;color:var(--foreground);line-height:1.4}
+.alert-description{color:var(--muted-foreground);text-wrap:pretty}
+
+/* ---- key/value grid (shadcn-ish definition list) ---- */
+.kv{display:grid;grid-template-columns:minmax(120px,180px) minmax(0,1fr);gap:10px 20px;
+font-size:14px;margin:0 0 16px}
+.kv dt{color:var(--muted-foreground)}
+.kv dd{margin:0;overflow-wrap:anywhere}
+
+/* ---- finding ---- */
+.finding{border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px;margin:12px 0;
+background:color-mix(in oklab,var(--card) 60%,var(--background))}
+.finding h3{margin:0 0 8px;font-size:15px;font-weight:600;display:flex;gap:10px;
+align-items:center;flex-wrap:wrap}
+.status{font-size:11px;color:var(--muted-foreground);border:1px solid var(--border);
+padding:2px 8px;border-radius:var(--radius-sm);font-weight:500}
+
+footer{border-top:1px solid var(--border);color:var(--muted-foreground);font-size:13px;
+padding:28px 24px;max-width:1100px;margin:0 auto;text-wrap:pretty}
+footer em{color:var(--foreground);font-style:normal;font-weight:500}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;
+background:var(--muted);padding:2px 6px;border-radius:var(--radius-sm)}
+
 @media (max-width:640px){
-  main{padding:24px 16px 48px}
-  .card{padding:18px 16px;border-radius:12px}
+  /* Stack the header so the nav reads as its own deliberate row rather than an
+     accidental 3-then-1 wrap. */
+  header.site{flex-direction:column;align-items:flex-start;gap:2px;padding:10px 12px}
+  nav{width:100%;gap:0 2px}
+  nav a{padding:6px 8px}
+  main{padding:28px 16px 48px}
+  .card{padding:18px;border-radius:var(--radius-lg)}
   .kv{grid-template-columns:minmax(0,1fr);gap:2px 0}
-  .kv dt{margin-top:10px;font-size:12.5px}
-  footer{padding:22px 16px}
+  .kv dt{margin-top:12px;font-size:12.5px}
+  footer{padding:24px 16px}
 }
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 `;
@@ -143,7 +225,7 @@ const slug = (repo) => repoName(repo).replace(/[^a-z0-9]+/gi, "-").toLowerCase()
 const breakable = (s) => esc(s).replace(/([/.])/g, "$1<wbr>");
 const sevBadge = (s) => `<span class="badge sev-${s}">${s}</span>`;
 const SCHEME_LABEL = { "nostr-schnorr": "nostr", "ssh-ed25519": "ssh", "pgp": "pgp" };
-const schemeBadge = (alg) => `<span class="pill">signed: ${esc(SCHEME_LABEL[alg] || alg)}</span>`;
+const schemeBadge = (alg) => `<span class="badge badge-outline">signed: ${esc(SCHEME_LABEL[alg] || alg)}</span>`;
 // A human label for any auditor key entry, regardless of type.
 const keyLabel = (k) => k.npub || k.principal || k.fingerprint || k.ssh_key || "(key)";
 
@@ -167,7 +249,8 @@ const indexBody = `
 <section class="hero">
   <h1>A public registry of AI security audits for open source</h1>
   <p>After the July 2026 Coldcard hack — ~$89M drained through a five-year-old software-PRNG seed bug in open-source firmware — one fact is inescapable: attackers already run frontier models against public code. OpenSourceCheck is where defenders publish their audit runs in the open: signed, human-validated, and reproducible.</p>
-  <div class="disclaimer"><strong>Read this first.</strong> An entry means a model was run over a stated scope and a human triaged what it reported. It is <strong>not</strong> a safety certificate. A clean run can miss real bugs — Coldcard proved exactly that.</div>
+  <div class="alert" role="note"><p class="alert-title">Read this first</p>
+    <p class="alert-description">An entry means a model was run over a stated scope and a human triaged what it reported. It is <strong>not</strong> a safety certificate. A clean run can miss real bugs — Coldcard proved exactly that.</p></div>
 </section>
 <h2>Coverage map — ${repos.length} project${repos.length === 1 ? "" : "s"}, ${attestations.length} attestation${attestations.length === 1 ? "" : "s"}, ${totalReal} finding${totalReal === 1 ? "" : "s"}</h2>
 <div class="table-wrap"><table>
@@ -189,8 +272,9 @@ for (const a of attestations) {
     </div>`).join("");
   const body = `
   <section class="hero"><h1>${esc(a.id)} · <a href="../t/${esc(slug(a.target.repo))}.html">${breakable(repoName(a.target.repo))}</a></h1>
-    <p>${sevBadge(topSeverity(a))} <span class="pill">${esc(a.verdict)}</span> <span class="pill">${esc(a.run.model)}</span> <span class="pill">${esc(a.run.date)}</span> ${schemeBadge(a.signature.alg)}</p>
-    ${isDemo ? `<div class="disclaimer"><strong>Demo attestation.</strong> Signed with the throwaway registry demo key — reproducibility example only. Do not trust its verdict.</div>` : ""}
+    <p>${sevBadge(topSeverity(a))} <span class="badge badge-outline">${esc(a.verdict)}</span> <span class="badge badge-outline">${esc(a.run.model)}</span> <span class="badge badge-outline">${esc(a.run.date)}</span> ${schemeBadge(a.signature.alg)}</p>
+    ${isDemo ? `<div class="alert" role="note"><p class="alert-title">Demo attestation</p>
+      <p class="alert-description">Signed with the throwaway registry demo key — reproducibility example only. Do not trust its verdict.</p></div>` : ""}
   </section>
   <div class="card"><dl class="kv">
     <dt>Repository</dt><dd><a href="${esc(a.target.repo)}">${esc(repoName(a.target.repo))}</a></dd>
@@ -229,7 +313,8 @@ for (const [repo, atts] of repos) {
 // --- about / methodology page ---
 const aboutBody = `<section class="hero"><h1>About OpenSourceCheck</h1>
   <p>A public, git-native registry of LLM-assisted security-review runs of open-source projects, Bitcoin-first. Every entry is a signed, human-validated, reproducible attestation.</p>
-  <div class="disclaimer"><strong>What an entry means.</strong> A model was run over a stated scope and a human triaged what it reported. It is <strong>not</strong> a safety certificate — a clean run can miss real bugs, as the 2026 Coldcard seed-entropy hack showed.</div></section>
+  <div class="alert" role="note"><p class="alert-title">What an entry means</p>
+    <p class="alert-description">A model was run over a stated scope and a human triaged what it reported. It is <strong>not</strong> a safety certificate — a clean run can miss real bugs, as the 2026 Coldcard seed-entropy hack showed.</p></div></section>
   <h2>How to read an attestation</h2>
   <div class="card"><dl class="kv">
     <dt>target</dt><dd>the repo and the <em>exact commit</em> that was reviewed (never a branch)</dd>

@@ -2,37 +2,40 @@
   "schema": "osc-attestation/v0",
   "id": "OSC-2026-0002",
   "target": {
-    "repo": "https://github.com/bitcoindevkit/bdk",
-    "commit": "1111111111111111111111111111111111111111",
-    "subpath": "crates/wallet/src/",
-    "release_tag": "ILLUSTRATIVE"
+    "repo": "https://github.com/bitcoindevkit/bdk_wallet",
+    "commit": "fc88144fc8e9532bc23ad490cb2de0445401b8b1",
+    "subpath": "src/keys/",
+    "release_tag": "HEAD (2026-07-27)"
   },
   "run": {
-    "date": "2026-08-03",
+    "date": "2026-08-04",
     "model": "claude-opus-4-8",
-    "harness": "claude-code v3.1",
-    "prompts_ref": "prompts/deep-audit-v1.md",
-    "scope": "ILLUSTRATIVE SEED ATTESTATION demonstrating a clean-run record. Illustrated scope: descriptor parsing and address derivation in the wallet crate; checked for key-material logging, weak randomness in key generation, and unchecked derivation-index arithmetic. NOT in scope: PSBT signing, chain sync, FFI bindings. target.commit is a placeholder.",
-    "duration_minutes": 22,
-    "runs_count": 3
+    "harness": "claude-code",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "6cbc639790fb2626f9e12010e0ee896ac3e2858b3a15a0cfdcc291eb1756d9bb",
+    "transcript_uri": "transcripts/OSC-2026-0002.md",
+    "scope": "The entropy/RNG path feeding BIP-39 mnemonic and key generation in src/keys/ (mod.rs GeneratableKey trait; bip39.rs Mnemonic impl). Traced every path from generate() to the bytes that become a mnemonic, at HEAD commit fc88144f. In scope: CSPRNG selection, the CryptoRng bound on generate_with_aux_rand, entropy sizing and possible truncation/reuse. NOT in scope: descriptor parsing, PSBT signing, chain sync, transaction building, FFI bindings, or the correctness of the upstream `rand`/`bip39` crates themselves.",
+    "duration_minutes": 20,
+    "runs_count": 1
   },
   "findings": [
     {
       "ref": "OSC-2026-0002-F1",
-      "severity": "none-found",
+      "severity": "info",
       "status": "unreviewed",
-      "summary": "No security-relevant findings surfaced within the stated scope across 3 independent runs. This is a data point, NOT an assertion that the code is safe."
+      "summary": "Seed-generation entropy path is sound and resistant to the Coldcard failure mode. generate() draws from the rand crate's CSPRNG (bitcoin::key::rand::thread_rng), and generate_with_aux_rand bounds its rng as `impl CryptoRng + RngCore` — so a non-cryptographic RNG is rejected at compile time, with no silent weak-PRNG fallback. A full 32 bytes are drawn and correctly sliced to word_count/8 (128 bits for 12 words); no truncation or reuse. Observation (not a defect): generate_with_aux_rand trusts the caller's rng — CryptoRng asserts suitability, not true entropy — so a caller passing a misconfigured or deliberately-seeded CryptoRng could still get weak keys. The default path is correct.",
+      "location": "src/keys/mod.rs:642 (generate_with_aux_rand), src/keys/bip39.rs:141 (generate_with_entropy)",
+      "cwe": "CWE-330"
     }
   ],
   "verdict": "clean-run",
   "auditor": {
     "id": "opensourcecheck-demo",
-    "name": "OpenSourceCheck Demo Key",
-    "contact": "demo@opensourcecheck.org"
+    "name": "OpenSourceCheck Demo Key"
   },
   "signature": {
     "alg": "nostr-schnorr",
     "principal": "npub1n9mgw84wlks5vnwm2r32jaq5nlnwcjeveae0jeqjnfzcdy8ezlrsll2tdd",
-    "value": "44ca479f47c19ed16e23106b7f8f847236d8729e59b1e69492649520069b6bec4addbfbb677c2b955ef87804690c24fd94bc077e169ff958b159f46574522bd3"
+    "value": "75e5912e9f70a5ba5326a5c27d1c4334ba1ef518e265b06c47f9fe455dd20631bbbbe51a3e53a4deaa8ff288b75b72dd0e6b0830ffac51fe49a144539483cf31"
   }
 }

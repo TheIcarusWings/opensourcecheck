@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0026",
+  "target": {
+    "repo": "https://github.com/proto-at-block/bitkey",
+    "commit": "cf16705543d0c66ff982635733d380944cc2677d",
+    "subpath": "firmware/lib/wallet/src/seed.c",
+    "release_tag": "HEAD (2026-08-02)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-fable-5",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "ef714936ab57f0ce310e9c9aa0d58b8719cd2e3bbbdabc9a8b4f75acb4bff5ad",
+    "transcript_uri": "transcripts/OSC-2026-0026.md",
+    "scope": "The master-seed entropy path in the device firmware at HEAD cf167055: seed creation in firmware/lib/wallet/src/seed.c, the crypto_random implementation in firmware/lib/crypto/src/efr32/secure_rng.c, failure handling, and seed-at-rest handling. EXPLICITLY NOT ESTABLISHED: the seed length - seed_t's definition could not be retrieved from a blobless clone, so no claim is made about entropy sizing. Also not examined: the Secure Engine's own RNG quality, key management, biometrics, the bootloader, signing paths, and the server-side components of the Bitkey system.",
+    "duration_minutes": 30,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0026-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No weakness found in scope. Seed entropy comes from the Silicon Labs Secure Engine (sl_se_get_random) rather than the application MCU, with no software PRNG anywhere in the path and no fallback to one, so the Coldcard failure class cannot arise. Failure handling is the strictest in this series: crypto_random returns false on ANY error including a failed command-context init, and the caller wraps it in ASSERT, so a failure halts the device rather than proceeding with buffer contents - compare Trezor which raises (OSC-2026-0025), Keystone3 which continues with two remaining sources (OSC-2026-0005), and Coldcard which silently produced a weak seed. The seed is encrypted at rest under the WKEK via wkek_encrypt_and_store rather than written in clear, and generation only occurs when no seed could be decrypted, so a working device does not silently re-roll. Observation (not a defect): this is a SINGLE entropy source, unlike Trezor's XOR of MCU plus secure elements or Keystone3's three-source HKDF chain - if that secure element's RNG were biased, nothing else contributes. A legitimate design position given a certified part and fail-closed handling, but a materially different trust assumption worth stating. Second observation: the seed LENGTH was not verified (seed_t unresolved in a blobless clone), so this record makes no claim about entropy sizing.",
+      "location": "firmware/lib/wallet/src/seed.c:25 (ASSERT(crypto_random(...))), firmware/lib/crypto/src/efr32/secure_rng.c (crypto_random)",
+      "cwe": "CWE-330"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "opensourcecheck@proton.me (github.com/TheIcarusWings)"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "4c1ece1ace23da2276bb9ec953557d511104e9dd597a31dadc3c72e5709829efa5dc4cc4575e8a8d184e7c5b57050375a7cd053059bda02a088d9b0eea89fa6e"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0025",
+  "target": {
+    "repo": "https://github.com/trezor/trezor-firmware",
+    "commit": "2b1938cc4d0d1c00d0c484a8b794e7758fe89f5b",
+    "subpath": "core/embed/sec/rng/",
+    "release_tag": "HEAD (2026-08-04)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-fable-5",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "cf6cfa3c1e871510e3f3ffb9391773d292fe59484e309300cb6d950fb63881d1",
+    "transcript_uri": "transcripts/OSC-2026-0025.md",
+    "scope": "The new-wallet seed-entropy path at HEAD 2b1938cc: reset_device entropy generation, the internal/external entropy mixing, the strong-RNG implementation in core/embed/sec/rng/rng_strong.c, and its failure handling. NOT examined: PIN handling, storage encryption, the bootloader, SLIP-39 share generation, signing paths, the Optiga provisioning protocol, and the quality of the underlying hardware RNGs themselves.",
+    "duration_minutes": 35,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0025-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No weakness found; this is the strongest entropy design audited in this series. rng_fill_buffer_strong (core/embed/sec/rng/rng_strong.c) draws from the MCU RNG then XORs in the Optiga secure element, and Tropic where present - XOR is the correct combiner, since the output stays random if ANY single input is random and independent, so an attacker must compromise every source at once. It FAILS CLOSED: a secure-element RNG error returns false and the Python layer raises RuntimeError rather than continuing, which is exactly what Coldcard lacked and stricter than Keystone3 (OSC-2026-0005), which does not check its first source's return value. The final secret is sha256(int_entropy || ext_entropy) truncated to strength, so a malicious host supplying chosen external entropy still cannot determine the seed. Notably, with entropy_check the device publishes hmac(SHA256, int_entropy) BEFORE receiving host entropy, letting the host verify afterwards that the device did not grind its own entropy after seeing theirs - a defence against a backdoored device that no other wallet in this series addresses. Observation (not a defect): the strong guarantee is compile-time conditional; a build defining neither USE_OPTIGA nor USE_TROPIC reduces the function to the plain MCU RNG while still returning true, so the name promises a property the build can remove. Unlike Coldcard this fallback is still a hardware RNG and exists because some models have no secure element, but a reader auditing a specific build should confirm the flags.",
+      "location": "core/embed/sec/rng/rng_strong.c (XOR combiner, fail-closed), core/src/apps/management/reset_device/__init__.py:88 (int_entropy + commitment), _compute_secret_from_entropy (mixing)",
+      "cwe": "CWE-330"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "opensourcecheck@proton.me (github.com/TheIcarusWings)"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "8b0607908d95ef222dd70a3d500a9f0bdd4a053896ada4a681977a52efccefde74d2443c82495e0f0761e7697df164f0759b32d63526e9e64d2680ce00fbbc8c"
+  }
+}

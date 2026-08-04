@@ -1,0 +1,41 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0003",
+  "target": {
+    "repo": "https://github.com/SeedSigner/seedsigner",
+    "commit": "1fb2956322ea978428a6a96b955baa93e965c877",
+    "subpath": "src/seedsigner/helpers/mnemonic_generation.py",
+    "release_tag": "HEAD (2026-07-22)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-opus-4-8",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "b078775a188d533396dc180490a65944e4ff2a785ec11f409ddd4113b5292e5f",
+    "transcript_uri": "transcripts/OSC-2026-0003.md",
+    "scope": "The entropy paths that produce a BIP-39 mnemonic on this airgapped signer: dice rolls and coin flips (helpers/mnemonic_generation.py) and camera-image entropy (views/tools_views.py). In scope: the entropy-extraction method (SHA-256 over user input), dice-to-bits modulo bias, entropy sizing/truncation, and memory hygiene of seed material. NOT in scope: PSBT/signing, QR encode/decode, the camera driver, the embit/bip39 dependency internals, or the physical unpredictability of any specific user's dice/image.",
+    "duration_minutes": 25,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0003-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "Entropy extraction is sound; no weakness found in scope. Dice/coin-flip input is hashed as a full string via SHA-256 (generate_mnemonic_from_dice), which avoids the classic per-die modulo bias; 50 d6 rolls carry ~129 bits (>=128 target), 99 rolls ~256. A full 32-byte digest is correctly sliced to 16 bytes for 12 words with the checksum added by the bip39 layer (no truncation/reuse bug). Image entropy chains SHA-256 over CPU serial + time + all camera frames + the final capture. Good hygiene: the image, frames, and intermediate hashes are zeroed (set to None) after mnemonic generation. Observation (not a defect): the image path mixes in NO system CSPRNG (os.urandom/secrets) by deliberate airgapped-device design, so its seed strength depends entirely on the captured image's min-entropy; SeedSigner's guidance to use a busy image or prefer dice is the mitigation.",
+      "location": "src/seedsigner/helpers/mnemonic_generation.py:64 (dice), src/seedsigner/views/tools_views.py:172 (image final_hash)",
+      "cwe": "CWE-331"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "opensourcecheck-demo",
+    "name": "OpenSourceCheck Demo Key"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub1n9mgw84wlks5vnwm2r32jaq5nlnwcjeveae0jeqjnfzcdy8ezlrsll2tdd",
+    "value": "053d5803e078c0de75d3d8953d035890bc9e2af6b566f90f7271d795c4a13709fd683587e38a1e3be5b2c4b3383e7f9966c547a172710461e2f2dcfa31e8818d"
+  }
+}

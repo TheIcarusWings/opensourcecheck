@@ -41,14 +41,15 @@ function topSeverity(att) {
   return real.sort((a, b) => sevRank(a.severity) - sevRank(b.severity))[0].severity;
 }
 
-const PAGE = (title, body) => `<!doctype html>
+// `base` is the relative prefix to the site root ("" for root pages, "../" for a/ and t/).
+const PAGE = (title, body, base = "") => `<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title>
 <style>${CSS}</style>
 </head><body>
-<header class="site"><a class="brand" href="index.html">OpenSource<span>Check</span></a>
-<nav><a href="index.html">Registry</a><a href="auditors.html">Auditors</a>
+<header class="site"><a class="brand" href="${base}index.html">OpenSource<span>Check</span></a>
+<nav><a href="${base}index.html">Registry</a><a href="${base}auditors.html">Auditors</a><a href="${base}about.html">About</a>
 <a href="https://github.com/TheIcarusWings/opensourcecheck">Source</a></nav></header>
 <main>${body}</main>
 <footer><p>OpenSourceCheck records what was <em>checked</em> and what came back. It never asserts code is safe — a clean AI run can miss real bugs. Every entry is a signed, human-validated attestation; verify offline with <code>node tools/osc/osc.mjs verify --all</code>.</p></footer>
@@ -101,6 +102,7 @@ footer em{color:var(--fg);font-style:normal}
 // ---------- pages ----------
 mkdirSync(OUT, { recursive: true });
 mkdirSync(join(OUT, "a"), { recursive: true });
+mkdirSync(join(OUT, "t"), { recursive: true });
 
 // group by repo, newest first
 const byRepo = {};
@@ -108,7 +110,12 @@ for (const a of attestations) (byRepo[a.target.repo] ??= []).push(a);
 for (const k in byRepo) byRepo[k].sort((x, y) => (y.run.date).localeCompare(x.run.date));
 const repos = Object.entries(byRepo).sort((a, b) => b[1][0].run.date.localeCompare(a[1][0].run.date));
 
+const slug = (repo) => repoName(repo).replace(/[^a-z0-9]+/gi, "-").toLowerCase();
 const sevBadge = (s) => `<span class="badge sev-${s}">${s}</span>`;
+const SCHEME_LABEL = { "nostr-schnorr": "nostr", "ssh-ed25519": "ssh", "pgp": "pgp" };
+const schemeBadge = (alg) => `<span class="pill">signed: ${esc(SCHEME_LABEL[alg] || alg)}</span>`;
+// A human label for any auditor key entry, regardless of type.
+const keyLabel = (k) => k.npub || k.principal || k.fingerprint || k.ssh_key || "(key)";
 
 // --- index / coverage map ---
 const rows = repos.map(([repo, atts]) => {
@@ -116,7 +123,7 @@ const rows = repos.map(([repo, atts]) => {
   const top = topSeverity(latest);
   const nReal = atts.reduce((n, a) => n + a.findings.filter((f) => f.severity !== "none-found").length, 0);
   return `<tr>
-    <td class="proj"><a href="a/${esc(latest.id)}.html">${esc(repoName(repo))}</a>
+    <td class="proj"><a href="t/${esc(slug(repo))}.html">${esc(repoName(repo))}</a>
       <div class="mono">@ ${esc(short(latest.target.commit))}${latest.target.subpath ? " · " + esc(latest.target.subpath) : ""}</div></td>
     <td>${sevBadge(top)}<div class="verdict">${esc(latest.verdict)}</div></td>
     <td class="mono">${esc(latest.run.model)}</td>
@@ -151,8 +158,8 @@ for (const a of attestations) {
       ${f.body_sha256 ? `<p class="muted">Withheld pending disclosure · body sha256 <span class="mono">${esc(short(f.body_sha256))}…</span></p>` : ""}
     </div>`).join("");
   const body = `
-  <section class="hero"><h1>${esc(a.id)} · ${esc(repoName(a.target.repo))}</h1>
-    <p>${sevBadge(topSeverity(a))} <span class="pill">${esc(a.verdict)}</span> <span class="pill">${esc(a.run.model)}</span> <span class="pill">${esc(a.run.date)}</span></p>
+  <section class="hero"><h1>${esc(a.id)} · <a href="../t/${esc(slug(a.target.repo))}.html">${esc(repoName(a.target.repo))}</a></h1>
+    <p>${sevBadge(topSeverity(a))} <span class="pill">${esc(a.verdict)}</span> <span class="pill">${esc(a.run.model)}</span> <span class="pill">${esc(a.run.date)}</span> ${schemeBadge(a.signature.alg)}</p>
     ${isDemo ? `<div class="disclaimer"><strong>Demo attestation.</strong> Signed with the throwaway registry demo key — reproducibility example only. Do not trust its verdict.</div>` : ""}
   </section>
   <div class="card"><dl class="kv">
@@ -169,20 +176,57 @@ for (const a of attestations) {
   </dl>
   <p class="muted"><strong>Scope.</strong> ${esc(a.run.scope)}</p></div>
   <h2>Findings</h2>${findings}`;
-  writeFileSync(join(OUT, "a", `${a.id}.html`), PAGE(`${a.id} — OpenSourceCheck`, body));
+  writeFileSync(join(OUT, "a", `${a.id}.html`), PAGE(`${a.id} — OpenSourceCheck`, body, "../"));
 }
+
+// --- per-target pages (all attestations for one repo) ---
+for (const [repo, atts] of repos) {
+  const rows = atts.map((a) => `<tr>
+    <td class="proj"><a href="../a/${esc(a.id)}.html">${esc(a.id)}</a>
+      <div class="mono">@ ${esc(short(a.target.commit))}${a.target.subpath ? " · " + esc(a.target.subpath) : ""}</div></td>
+    <td>${sevBadge(topSeverity(a))}<div class="verdict">${esc(a.verdict)}</div></td>
+    <td class="mono">${esc(a.run.model)}</td>
+    <td class="mono">${esc(a.run.date)}</td>
+    <td class="mono">${esc(a.auditor.id)}</td></tr>`).join("\n");
+  const body = `<section class="hero"><h1>${esc(repoName(repo))}</h1>
+    <p><a href="${esc(repo)}">${esc(repo)}</a></p>
+    <p class="muted">${atts.length} attestation${atts.length === 1 ? "" : "s"} in the registry for this project. Each is one audit run at an exact commit — none is a safety guarantee.</p></section>
+    <table><thead><tr><th>Attestation</th><th>Verdict</th><th>Model</th><th>Date</th><th>Auditor</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+  writeFileSync(join(OUT, "t", `${slug(repo)}.html`), PAGE(`${repoName(repo)} — OpenSourceCheck`, body, "../"));
+}
+
+// --- about / methodology page ---
+const aboutBody = `<section class="hero"><h1>About OpenSourceCheck</h1>
+  <p>A public, git-native registry of LLM-assisted security-review runs of open-source projects, Bitcoin-first. Every entry is a signed, human-validated, reproducible attestation.</p>
+  <div class="disclaimer"><strong>What an entry means.</strong> A model was run over a stated scope and a human triaged what it reported. It is <strong>not</strong> a safety certificate — a clean run can miss real bugs, as the 2026 Coldcard seed-entropy hack showed.</div></section>
+  <h2>How to read an attestation</h2>
+  <div class="card"><dl class="kv">
+    <dt>target</dt><dd>the repo and the <em>exact commit</em> that was reviewed (never a branch)</dd>
+    <dt>run</dt><dd>the exact model, harness, prompt pack, and a hash of the full transcript — so the run can be re-done and compared</dd>
+    <dt>findings</dt><dd>each with a severity and a human-triage <em>status</em>; raw model output stays <span class="mono">unreviewed</span> until a named validator confirms it</dd>
+    <dt>verdict</dt><dd><span class="mono">findings-validated</span>, <span class="mono">clean-run</span> (ran to completion, nothing actionable in scope — a first-class result), or <span class="mono">inconclusive</span></dd>
+    <dt>signature</dt><dd>a Nostr (schnorr), SSH, or PGP signature over the canonical attestation, verifiable fully offline</dd>
+  </dl></div>
+  <h2>Verify any entry yourself</h2>
+  <div class="card"><p class="mono">git clone https://github.com/TheIcarusWings/opensourcecheck.git<br>cd opensourcecheck &amp;&amp; npm ci<br>node tools/osc/osc.mjs verify --all</p>
+  <p class="muted">Verification trusts no server: it checks each signature against the auditor's registered key.</p></div>
+  <h2>Responsible disclosure</h2>
+  <div class="card"><p>Findings of severity <strong>medium or higher in live software</strong> are published as <span class="mono">withheld-pending-disclosure</span> — only a <span class="mono">body_sha256</span> hash-commitment is shown (proving priority without leaking the bug) until a fix ships. See the disclosure and governance policies in the repository.</p></div>`;
+writeFileSync(join(OUT, "about.html"), PAGE("About — OpenSourceCheck", aboutBody));
 
 // --- auditors page ---
 const auditorRows = Object.values(auditors).map((au) => {
   const mine = attestations.filter((a) => a.auditor.id === au.id);
   const validated = mine.reduce((n, a) => n + a.findings.filter((f) => f.status === "validated").length, 0);
+  const keys = (au.keys || []).map((k) => `<div class="mono">${esc(keyLabel(k))}</div>`).join("");
   return `<tr><td class="proj">${esc(au.name)} <div class="mono">${esc(au.id)}${au.role === "demo" ? " · demo key" : ""}</div></td>
     <td>${mine.length}</td><td>${validated}</td>
-    <td class="mono">${esc((au.keys || []).map((k) => k.principal).join(", "))}</td></tr>`;
+    <td>${keys}</td></tr>`;
 }).join("");
 const auditorsBody = `<section class="hero"><h1>Auditors</h1>
-  <p>Anyone with a registered signing key may submit attestations. Trust is a web of trust, not a gate — weight each auditor by their track record. Public keys below can be cross-checked out-of-band (e.g. github.com/&lt;user&gt;.keys).</p></section>
-  <table><thead><tr><th>Auditor</th><th>Attestations</th><th>Validated findings</th><th>Signing principals</th></tr></thead>
+  <p>Anyone with a registered signing key may submit attestations. Trust is a web of trust, not a gate — weight each auditor by their track record. Registered keys below (npub, SSH principal, or PGP fingerprint) can be cross-checked out of band.</p></section>
+  <table><thead><tr><th>Auditor</th><th>Attestations</th><th>Validated findings</th><th>Registered keys</th></tr></thead>
   <tbody>${auditorRows}</tbody></table>`;
 writeFileSync(join(OUT, "auditors.html"), PAGE("Auditors — OpenSourceCheck", auditorsBody));
 

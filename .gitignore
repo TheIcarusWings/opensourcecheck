@@ -8,3 +8,7 @@ tools/nostr/out/
 *.pem
 id_ed25519
 id_rsa
+
+# Launch drafts / private runbooks are kept out of the public repo
+docs/launch/
+docs/MIGRATION.md

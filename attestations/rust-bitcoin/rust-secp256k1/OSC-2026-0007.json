@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0007",
+  "target": {
+    "repo": "https://github.com/rust-bitcoin/rust-secp256k1",
+    "commit": "9fc86f756f0cd24a5167c131551b31b748c8cdb3",
+    "subpath": "src/ecdsa/mod.rs",
+    "release_tag": "HEAD (2026-03-01)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-fable-5",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "1e59ef7ad726b8aa20453152226b2739cd54d1df99578c3db57070e5d8ad4529",
+    "transcript_uri": "transcripts/OSC-2026-0007.md",
+    "scope": "ECDSA nonce generation in the signing path of the Rust bindings at HEAD 9fc86f75, the layer beneath BDK, LDK and Liana. In scope: which nonce function the bindings select, whether randomness is introduced, and whether a fallback implementation could be selected silently. EXPLICITLY NOT in scope: libsecp256k1 itself (the correctness of secp256k1_nonce_function_rfc6979 is an upstream property and would need its own attestation), Schnorr/BIP-340 paths, ECDH, key generation helpers, and the rand feature's use in keypair generation.",
+    "duration_minutes": 20,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0007-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No weakness found in scope. Both ECDSA signing entry points explicitly pin libsecp256k1's deterministic nonce function (ffi::secp256k1_nonce_function_rfc6979, src/ecdsa/mod.rs:249 and :302), so signing consumes no RNG at all and the Coldcard failure class - a weak or silently-substituted random source backing key material - cannot arise on this path. The variant accepting caller-supplied extra data keeps the nonce a deterministic function of (key, message, extra data) rather than introducing randomness, so it cannot produce a repeated nonce across different messages, which is the condition that leaks a private key. Unlike embit (OSC-2026-0004), there is no pure-Rust fallback implementation that could be selected silently, so no equivalent silent-degradation risk exists. Scope boundary stated plainly: this covers the bindings, not libsecp256k1 itself.",
+      "location": "src/ecdsa/mod.rs:249, src/ecdsa/mod.rs:302 (nonce function selection)",
+      "cwe": "CWE-330"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "a2252af11eaf77a24b060dec8a84cdfcebebec0a7d20a1ab410d5f5017124c45243454693330d9ee496e98d83483d65fa788b282975fa4ba161af99320ab3454"
+  }
+}

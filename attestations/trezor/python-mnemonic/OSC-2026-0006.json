@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0006",
+  "target": {
+    "repo": "https://github.com/trezor/python-mnemonic",
+    "commit": "b57a5ad77a981e743f4167ab2f7927a55c1e82a8",
+    "subpath": "src/mnemonic/mnemonic.py",
+    "release_tag": "HEAD (2024-08-27)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-fable-5",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "e0ab780324dd7b793dfc7de223cb791bc425b95a37ba3ded180e28e885e7dd22",
+    "transcript_uri": "transcripts/OSC-2026-0006.md",
+    "scope": "Entropy sourcing and BIP-39 correctness in the reference implementation at HEAD b57a5ad7. In scope: the RNG behind generate(), strength validation, checksum and 11-bit word encoding in to_mnemonic(), and PBKDF2 parameters in to_seed(). NOT in scope: the wordlists themselves, SLIP-39, language detection heuristics, or downstream projects that vendor this code.",
+    "duration_minutes": 20,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0006-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No weakness found in scope. generate() draws entropy from secrets.token_bytes (os.urandom-backed CSPRNG); the weak random module (Mersenne Twister) is absent from the generation path. There is no fallback RNG, build flag, or config switch that could substitute a weaker source, which is the structural opposite of the Coldcard build-time swap. Strength is validated twice (generate() rejects values outside the BIP-39 set; to_mnemonic() re-validates byte length), so a caller cannot obtain a short brute-forceable mnemonic. BIP-39 conformance is correct: SHA-256 checksum, ENT/32 checksum bits, 11-bit indices, and PBKDF2-HMAC-SHA512 at the spec-mandated 2048 rounds with the 'mnemonic' salt prefix and NFKD normalization. Observation (not a defect): the repository's last commit is 2024-08-27, about two years before this audit; BIP-39 is a frozen spec and this implementation is small and complete, so age is not evidence of neglect, but the audited commit is not recent.",
+      "location": "src/mnemonic/mnemonic.py:130 (generate), :32 (PBKDF2_ROUNDS=2048), to_mnemonic/to_seed",
+      "cwe": "CWE-330"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "a3e7efe6669c1bfe1c28e4e4306fe85998edf81043b5baca82fd16a44bc05f13782b9e181d1a4b52889cc2186a3d52132bba839b44d1ebc0449293cd25bc903e"
+  }
+}

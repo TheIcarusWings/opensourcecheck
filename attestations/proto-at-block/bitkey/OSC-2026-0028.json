@@ -1,0 +1,40 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0028",
+  "target": {
+    "repo": "https://github.com/proto-at-block/bitkey",
+    "commit": "cf16705543d0c66ff982635733d380944cc2677d"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "201a1f1b9fea088ca760a545c29879457b0be748b97b2c8238545a51d99b1dc6",
+    "transcript_uri": "transcripts/OSC-2026-0028.md",
+    "scope": "Independent entropy/RNG audit of bitkey at cf167055. In scope: BIP-32 seed generation (seed.c → crypto_random), EFR32 Secure Engine TRNG on w3-core/w1, STM32U5 TRNG+HMAC-DRBG on w3-uxc (non-seed image), Meson platform source selection, secp256k1 ECDSA RFC6979 and Schnorr auxiliary randomness. Out of scope: biometrics/PIN policy, PSBT authorization, UI, grant protocol. Cross-model independent counterpart (did not read OSC-2026-0026 findings before concluding).",
+    "duration_minutes": 75,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0028-F1",
+      "severity": "none-found",
+      "status": "unreviewed",
+      "summary": "No insufficient-entropy defect found in scope. Wallet seed (32 bytes) is generated on EFR32 core via crypto_random → sl_se_get_random (Secure Engine), fail-closed with ASSERT; Meson binds w3-core/w1 wallet to efr32mg24 crypto, not the STM32 HMAC-DRBG path. secp256k1 ECDSA uses libsecp256k1 default RFC6979 nonce; Schnorr auxiliary rand is SE TRNG. No software-PRNG fallback or Coldcard-class silent TRNG disable found for seed generation.",
+      "location": "firmware/lib/wallet/src/seed.c:21-36; firmware/lib/wallet/src/seed_impl.h:6; firmware/lib/crypto/src/efr32/secure_rng.c:8-21; firmware/lib/crypto/meson.build:1-45; firmware/app/w3-core/application/meson.build:51,58; firmware/lib/crypto/src/ecc.c:103-128,184-207; firmware/lib/crypto/src/stm32/rng.c:39-62"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "opensourcecheck@proton.me (github.com/TheIcarusWings)"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "31b1104a1ef90b7a09168b289adc2192ba18e5eb8790765bd13ec601f600f146ff393e8fb6ac5ddf8ad2e43759bb64a536ec63ac51eca64f45b3b40ce1fe3e4f"
+  }
+}

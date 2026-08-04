@@ -198,7 +198,7 @@
       },
       "allOf": [
         { "if": { "properties": { "alg": { "const": "nostr-schnorr" } } },
-          "then": { "properties": { "principal": { "type": "string", "pattern": "^npub1[a-z0-9]{58,}$" }, "value": { "type": "string", "pattern": "^[0-9a-f]{128}$" } } } },
+          "then": { "properties": { "principal": { "type": "string", "pattern": "^npub1[a-z0-9]{58,}$" }, "value": { "type": "string", "pattern": "^([0-9a-f]{128}|PENDING___sign)$", "description": "128-hex BIP-340 schnorr signature, or the literal PENDING___sign for intentionally unsigned draft records (must not use all-zero hex, which looks signed)." } } } },
         { "if": { "properties": { "alg": { "const": "ssh-ed25519" } } },
           "then": { "properties": { "value": { "type": "string", "pattern": "BEGIN SSH SIGNATURE" } } } },
         { "if": { "properties": { "alg": { "const": "pgp" } } },

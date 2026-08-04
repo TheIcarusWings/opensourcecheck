@@ -1,0 +1,40 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0027",
+  "target": {
+    "repo": "https://github.com/trezor/trezor-firmware",
+    "commit": "2b1938cc4d0d1c00d0c484a8b794e7758fe89f5b"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "172e14bedf50bcb95a0b445315dd05739d1f9775b723b5dda806257e23bc1f4f",
+    "transcript_uri": "transcripts/OSC-2026-0027.md",
+    "scope": "Independent entropy/RNG audit of trezor-firmware at 2b1938cc. In scope: BIP-39/SLIP-39 seed generation (reset_device → random.bytes strong → rng_fill_buffer_strong → MCU TRNG XOR Optiga/Tropic), USE_INSECURE_PRNG production gates (core build.rs + legacy EMULATOR), STM32 FIPS continuous RNG test, ECDSA RFC6979 nonces. Out of scope: PIN/UI, PSBT, USB, display, Nordic radio tests. Cross-model independent counterpart (did not read OSC-2026-0025 findings before concluding).",
+    "duration_minutes": 75,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0027-F1",
+      "severity": "none-found",
+      "status": "unreviewed",
+      "summary": "No insufficient-entropy defect found in scope. Wallet internal entropy is random.bytes(32, True) → rng_fill_buffer_strong (fail-closed) → STM32 TRNG with FIPS continuous equal-sample test, XOR-mixed with Optiga/Tropic when board features enable them. USE_INSECURE_PRNG LCG is production-blocked and emulator-only on legacy T1. ECDSA k uses RFC6979 by default. No build flag found that silently routes production seed generation through a software PRNG.",
+      "location": "core/src/apps/management/reset_device/__init__.py:88; core/embed/upymod/modtrezorcrypto/modtrezorcrypto-random.h:57-61; core/embed/sec/rng/rng_strong.c:37-78; core/embed/sys/rng/stm32/rng.c:32-85; core/embed/crypto/build.rs:198-205; crypto/options.h:58-59; crypto/ecdsa.c:692-710; legacy/Makefile.include:107-109"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "opensourcecheck@proton.me (github.com/TheIcarusWings)"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "25dc97601c01820962af013c5cbcf76aee19458cde12eb5af845b187cb01c7a4e139b93bed9ed47a9616117c26d9c442241fd5a3d97528c395a024eff6358254"
+  }
+}

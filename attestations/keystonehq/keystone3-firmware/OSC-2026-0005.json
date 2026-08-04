@@ -9,10 +9,10 @@
   },
   "run": {
     "date": "2026-08-04",
-    "model": "claude-opus-4-8",
+    "model": "claude-fable-5",
     "harness": "claude-code",
     "prompts_ref": "prompts/entropy-rng-audit-v1.md",
-    "transcript_sha256": "2e2a8e8405cb54d3a5bb5785987a42b684a059ed160b8a12182360903eaecd3b",
+    "transcript_sha256": "0804443d9d0314eb31ea63939f18e8fa45cd9eea2acd42c826cf2d0a9406a9f4",
     "transcript_uri": "transcripts/OSC-2026-0005.md",
     "scope": "Seed-entropy generation on a live commercial hardware wallet at HEAD 31f1fa88: GenerateEntropy (src/managers/keystore.c:75), the MH1903 TRNG driver (src/driver/drv_trng.c), and whether raw entropy can leak via debug output. In scope: number and independence of entropy sources, KDF mixing, error handling, debug-gating, buffer clearing. NOT in scope: the rest of the firmware (PSBT/signing, USB/QR transport, secure-element provisioning, bootloader, the vendored external/ libraries), the physical quality of the hardware RNGs themselves, or the Rust components under rust/.",
     "duration_minutes": 35,
@@ -38,6 +38,6 @@
   "signature": {
     "alg": "nostr-schnorr",
     "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
-    "value": "b8be930c4fe8c0a76ced24f4879427cb6180e198ff28135df25818d700e47f3ab940796b99aecf7b8752fe9785e319fef8eff075b0370507dad135deca552e5b"
+    "value": "7aad16b88adcafeed89400cd08b98afa153d06396c498f9425a7d7e352f3a4f0fd8007401b9c8bec15065a010b6f1dcc3ce222c7e05329f7ec76902ea2052119"
   }
 }

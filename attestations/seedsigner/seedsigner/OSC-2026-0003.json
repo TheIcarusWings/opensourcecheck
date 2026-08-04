@@ -9,10 +9,10 @@
   },
   "run": {
     "date": "2026-08-04",
-    "model": "claude-opus-4-8",
+    "model": "claude-fable-5",
     "harness": "claude-code",
     "prompts_ref": "prompts/entropy-rng-audit-v1.md",
-    "transcript_sha256": "666d4d9a72d43915615b92e903e3f2c3abf964a332a6f37f2d4062d0f41553a7",
+    "transcript_sha256": "8c35aee9b10e377ac0530c581a1f323c12c674ce6285fc7d5f637f199c939573",
     "transcript_uri": "transcripts/OSC-2026-0003.md",
     "scope": "The entropy paths that produce a BIP-39 mnemonic on this airgapped signer: dice rolls and coin flips (helpers/mnemonic_generation.py) and camera-image entropy (views/tools_views.py). In scope: the entropy-extraction method (SHA-256 over user input), dice-to-bits modulo bias, entropy sizing/truncation, and memory hygiene of seed material. NOT in scope: PSBT/signing, QR encode/decode, the camera driver, the embit/bip39 dependency internals, or the physical unpredictability of any specific user's dice/image.",
     "duration_minutes": 25,
@@ -38,6 +38,6 @@
   "signature": {
     "alg": "nostr-schnorr",
     "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
-    "value": "a0dd6e807d6578c21ec087addf3a3573b3b4adf455cb8738e6a7d4f99cab15562ed2965056d7f182ea081a88cbd9e864811c815145711bde63a59948fdd35b96"
+    "value": "b0baf909d0d7a9e0db238a3bca1d570bb01436b7875176a1f8504f4118abc851e72d834b79d46417d003d8fbbc62f6b4f3a04080011156f81129b7bcc22721fb"
   }
 }

@@ -9,10 +9,10 @@
   },
   "run": {
     "date": "2026-08-04",
-    "model": "claude-opus-4-8",
+    "model": "claude-fable-5",
     "harness": "claude-code",
     "prompts_ref": "prompts/entropy-rng-audit-v1.md",
-    "transcript_sha256": "554d9415215473d110e36f9067bc8d8c1b1b05a30a9273c6147f0eafeecbeb64",
+    "transcript_sha256": "490fdfb27776b3aa20391b7502d86307ad44e39b613fbf047e482e0466db15bd",
     "transcript_uri": "transcripts/OSC-2026-0004.md",
     "scope": "Randomness and ECDSA nonce generation in the signing path, and the secp256k1 backend-selection logic, at HEAD fff7ffa4. embit is the shared Bitcoin library under several DIY signers (SeedSigner, Specter-DIY), so this path is high-leverage. In scope: nonce derivation in every backend (native/ctypes/pure-Python), low-R grinding, RFC6979 correctness, and whether a weaker backend can be selected silently. NOT in scope: PSBT parsing, descriptors, Liquid/confidential-transaction code, slip39, the correctness of libsecp256k1 itself, or seed-entropy quality (embit takes entropy from the caller and generates none).",
     "duration_minutes": 30,
@@ -38,6 +38,6 @@
   "signature": {
     "alg": "nostr-schnorr",
     "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
-    "value": "c0cc02d30689ad059cba0972b68e9635519496754cde144008ac9ec015eb85347600f260f23d8869b53e37a14b0498038de25602ad79423627e2feb41bdd03d7"
+    "value": "c366114aaf60ec98531fbfb720f23988e27779fe19ecef39c49c9ccf518a78fee456cef6c3a10603d7397798c281b83b3999a4792360469f39638939548dd774"
   }
 }

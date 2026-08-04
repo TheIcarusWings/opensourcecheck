@@ -9,10 +9,10 @@
   },
   "run": {
     "date": "2026-08-04",
-    "model": "claude-opus-4-8",
+    "model": "claude-fable-5",
     "harness": "claude-code",
     "prompts_ref": "prompts/entropy-rng-audit-v1.md",
-    "transcript_sha256": "1415ed20f87c179bf3950d3ffe8e387b5c8dc47a05096fe1c49d3140f19bb9fa",
+    "transcript_sha256": "7e7330c5a5a78ddc12401eb9eb8b7b1d5f3fca97b4f90491ee12fc9166c0a41b",
     "transcript_uri": "transcripts/OSC-2026-0001.md",
     "scope": "Retrospective, source-grounded audit of the publicly-disclosed Coldcard seed-entropy vulnerability at the last vulnerable commit (bcc2c382, parent of the fix ca724637). In scope: entropy/RNG code paths feeding BIP-39 seed generation on STM32 builds; TRNG-vs-software-PRNG selection; build-time RNG symbol linkage. NOT in scope: PIN/secure-element logic, PSBT handling, USB stack. The ngu.random->C rng_get binding lives in an unfetched submodule and is inferred from the fix's symbol-level assertions plus the Python call sites (confidence: high).",
     "duration_minutes": 15,
@@ -40,6 +40,6 @@
   "signature": {
     "alg": "nostr-schnorr",
     "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
-    "value": "9c0d4a5e0839eb3fe7c27fb1897317f6b700d1c96615914e5fd04d367ba36cf40d483fb0e4806286b0776cff5c73c5055036dda56fde9bb9bda89183971b3989"
+    "value": "7815a64b0c02254561bc33fc61060be3f2d3fed386a8d0fc5739bf8a9fdc320ae11c1751e719a8fc39ceeadd8cd5ad2d5841640dd5c343abc66f15e7d77abedd"
   }
 }

@@ -136,5 +136,7 @@ trust its verdicts.
 
 ## License
 
-Schema and tools (`schema/`, `tools/`) are MIT/CC0. Attestation content is CC-BY —
-attribution matters for auditor reputation.
+Code and schema (`tools/`, `schema/`, `site/`) are **MIT** — see [LICENSE](./LICENSE).
+Attestation content (`attestations/`, `transcripts/`, `prompts/`, `auditors/`) is
+**CC BY 4.0**, because attribution is what gives an auditor's record its value.
+Details in [LICENSING.md](./LICENSING.md).

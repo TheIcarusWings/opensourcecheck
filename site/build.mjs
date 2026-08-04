@@ -138,7 +138,7 @@ padding:24px;margin:0 0 20px;box-shadow:0 1px 2px 0 oklch(0 0 0 / 0.28)}
 /* ---- table ---- */
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;
 border:1px solid var(--border);border-radius:var(--radius-lg)}
-table{width:100%;min-width:620px;border-collapse:collapse;font-size:14px;caption-side:bottom}
+table{width:100%;min-width:760px;border-collapse:collapse;font-size:14px;caption-side:bottom}
 thead tr{border-bottom:1px solid var(--border)}
 th{height:44px;padding:0 16px;text-align:left;vertical-align:middle;font-weight:500;
 font-size:12.5px;color:var(--muted-foreground)}
@@ -232,14 +232,22 @@ const keyLabel = (k) => k.npub || k.principal || k.fingerprint || k.ssh_key || "
 // --- index / coverage map ---
 const rows = repos.map(([repo, atts]) => {
   const latest = atts[0];
-  const top = topSeverity(latest);
+  // Summarise across EVERY attestation for this target, not just the most recent one.
+  // A target may be audited by several models under several lenses; showing only the
+  // latest would let a later clean run visually mask an earlier critical finding, and
+  // when runs share a date "latest" is arbitrary anyway.
+  const worst = atts.map(topSeverity).sort((a, b) => sevRank(a) - sevRank(b))[0];
+  const models = [...new Set(atts.map((a) => a.run.model))].sort();
+  const lenses = [...new Set(atts.map((a) => (a.run.prompts_ref || "").replace("prompts/", "").replace("-audit-v1.md", "")))].filter(Boolean).sort();
+  const lastChecked = atts.map((a) => a.run.date).sort().slice(-1)[0];
   const nReal = atts.reduce((n, a) => n + a.findings.filter((f) => f.severity !== "none-found").length, 0);
   return `<tr>
     <td class="proj"><a href="t/${esc(slug(repo))}.html">${esc(repoName(repo))}</a>
       <div class="mono">@ ${esc(short(latest.target.commit))}${latest.target.subpath ? " · " + esc(latest.target.subpath) : ""}</div></td>
-    <td>${sevBadge(top)}<div class="verdict">${esc(latest.verdict)}</div></td>
-    <td class="mono">${esc(latest.run.model)}</td>
-    <td class="mono">${esc(latest.run.date)}</td>
+    <td>${sevBadge(worst)}<div class="verdict">worst of ${atts.length}</div></td>
+    <td class="mono">${models.map((m) => esc(m)).join("<br>")}</td>
+    <td>${lenses.map((l) => `<span class="badge badge-outline">${esc(l)}</span>`).join(" ")}</td>
+    <td class="mono">${esc(lastChecked)}</td>
     <td>${atts.length} run${atts.length > 1 ? "s" : ""}<div class="verdict">${nReal} finding${nReal === 1 ? "" : "s"}</div></td>
   </tr>`;
 }).join("\n");
@@ -254,7 +262,7 @@ const indexBody = `
 </section>
 <h2>Coverage map — ${repos.length} project${repos.length === 1 ? "" : "s"}, ${attestations.length} attestation${attestations.length === 1 ? "" : "s"}, ${totalReal} finding${totalReal === 1 ? "" : "s"}</h2>
 <div class="table-wrap"><table>
-<thead><tr><th>Project · last audited commit</th><th>Latest verdict</th><th>Model</th><th>Last checked</th><th>Coverage</th></tr></thead>
+<thead><tr><th>Project · last audited commit</th><th>Highest severity</th><th>Models</th><th>Lenses</th><th>Last checked</th><th>Coverage</th></tr></thead>
 <tbody>${rows}</tbody></table></div>`;
 writeFileSync(join(OUT, "index.html"), PAGE("OpenSourceCheck — AI audit registry", indexBody));
 

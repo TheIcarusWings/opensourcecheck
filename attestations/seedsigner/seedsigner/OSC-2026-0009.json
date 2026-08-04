@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0009",
+  "target": {
+    "repo": "https://github.com/SeedSigner/seedsigner",
+    "commit": "1fb2956322ea978428a6a96b955baa93e965c877",
+    "subpath": "src/seedsigner/",
+    "release_tag": "HEAD (2026-07-22)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-fable-5",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "519bbfc8842764e8562adc06a91009bb84277be9eb43af08d163a90b040d9ad0",
+    "transcript_uri": "transcripts/OSC-2026-0009.md",
+    "scope": "Transaction-authorization loss-of-funds class at HEAD 1fb29563 - a second lens on a target already audited for entropy in OSC-2026-0003, not a replacement. In scope: change-output re-derivation and whether it gates signing, multisig descriptor verification, input-value provenance, and display-vs-signed consistency. NOT in scope: QR transport and camera handling, the embit dependency's internals, entropy (covered by OSC-2026-0003), and firmware/OS update integrity.",
+    "duration_minutes": 40,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0009-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No defect substantiated in scope. Change verification is real and gates the flow: for single-sig the device re-derives the address from its own xpub and compares it to the transaction's, and on mismatch routes to PSBTAddressVerificationFailedView with clear_history=True (psbt_views.py:417-418), so the user cannot back out and proceed. Multisig with a loaded descriptor is verified via descriptor.owns(). Display and signed content cannot diverge: all rendered values come from one PSBTParser over controller.psbt, and PSBTFinalizeView signs that same object. OBSERVATION (a): multisig WITHOUT a loaded descriptor offers the user SKIP_VERIFICATION (psbt_views.py:364-366) and the gate deliberately excludes that case - a defensible tradeoff since the script cannot be reconstructed without the descriptor, but a reachable path where a user approves unverified change; it is an explicit user choice, not a silent failure. OBSERVATION (b): input values are taken directly from witness_utxo (psbt_parser.py:97-113); embit provides InputScope.verify() whose docstring cites the Trezor fee-attack advisory, but grepping SeedSigner's src/ for '.verify(' returns NO call sites, so that protection is available but unused. Deliberately not reported as a vulnerability: for SegWit v0 the amount is committed in the BIP-143 sighash, so a single lie yields a signature invalid for the real UTXO. Confidence not a straightforward fund-loss bug: high; confidence safe under all multi-session flows: medium; settling it needs dynamic device testing not performed here.",
+      "location": "src/seedsigner/views/psbt_views.py:417 (gate), :364 (skip path), src/seedsigner/models/psbt_parser.py:97 (input values)",
+      "cwe": "CWE-345"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "4e809a6857b3fe01462d56ac95cd88e45dfe889faced478c76605a4593bdc215ddd887d1aea018d946f5dbf8b809e15ffc79ea53b9007d3418eda0097600ce69"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0012",
+  "target": {
+    "repo": "https://github.com/diybitcoinhardware/embit",
+    "commit": "fff7ffa43f6ce088c5ba22cb3877a122bf01dc96",
+    "subpath": "src/embit/psbt.py",
+    "release_tag": "HEAD (2026-06-02)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-fable-5",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "31012b8bee42811662926b43afa565c398659e261e3269db6875c11ebb6d0afb",
+    "transcript_uri": "transcripts/OSC-2026-0012.md",
+    "scope": "Transaction-authorization loss-of-funds class at HEAD fff7ffa4 - second lens on the target audited for signing nonces in OSC-2026-0004. In scope: whether the library performs change-output verification, what fee-attack protection it offers and whether that is opt-in, and PSBT parser robustness on hostile input. NOT in scope: display logic (none), firmware update integrity (none), and the downstream applications that consume this library.",
+    "duration_minutes": 30,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0012-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No defect found in scope; the central check is not applicable BY DESIGN, and that is the point of the record. Searching all of src/embit/ for is_mine, is_change, change_index or change_derivation returns no matches: embit is a general-purpose PSBT library, not a wallet, and correctly leaves 'is this output mine' to the application. It is recorded because that responsibility is easy to assume someone else has taken - embit is the PSBT layer beneath SeedSigner, Specter-DIY and other DIY signers, and any integrator assuming embit validates change for them has a fund-loss bug in their own code. embit DOES provide InputScope.verify() (psbt.py:226), whose docstring names the Trezor miner-fee attack directly, but it is OPT-IN: PSBT.utxo(i) (:691) does not call it and prefers witness_utxo gated only on caller-set state, and PSBT.fee() (:702) sums values without forcing verification - so a consumer that never calls verify() gets no fee-attack protection, which OSC-2026-0009 records is the case for SeedSigner. Parser robustness is sound: read_string bounds-checks length-prefixed reads (:33-38), duplicate keys are rejected globally and per-scope, and the PSBT magic is validated before parsing; psbtview.py documents a time-of-check/time-of-use hazard with untrusted SD media in its module docstring.",
+      "location": "src/embit/psbt.py:226 (verify, opt-in), :691 (utxo), :702 (fee), :33 (read_string bounds check)",
+      "cwe": "CWE-655"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "227899d597332493f4ea191ecb0c62e45547a4876ab67a71fe96854a170e46848e4d136d8d9c170ebaedef5b63b63a723ab691242a949ee44da94ce59404b904"
+  }
+}

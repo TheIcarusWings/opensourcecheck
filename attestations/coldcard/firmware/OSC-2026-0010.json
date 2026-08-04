@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0010",
+  "target": {
+    "repo": "https://github.com/Coldcard/firmware",
+    "commit": "c849c4e04a978335937a0fd0c96e76f5bd70bbb6",
+    "subpath": "shared/psbt.py",
+    "release_tag": "HEAD (2026-08-01, post-RNG-fix)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-fable-5",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "c0d1ad90abf85cb272e049738172ebe888286d03d4d8cb07b5b2b177e0b240b5",
+    "transcript_uri": "transcripts/OSC-2026-0010.md",
+    "scope": "Transaction-authorization loss-of-funds class at current HEAD c849c4e0 - a second lens on the target audited for entropy in OSC-2026-0001, and at a DIFFERENT commit (0001 audited the pre-fix bcc2c382). In scope: change-output validation and its failure direction, multisig script reconstruction, input-value provenance. NOT in scope: fee display logic, USB/NFC transport, firmware update integrity, secure-element interaction, and entropy (covered by OSC-2026-0001).",
+    "duration_minutes": 40,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0010-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No defect found in scope; of the four signers audited under this pack, Coldcard's change handling is the strictest. Where others reclassify a suspicious output as 'not mine' and display it as a payment, Coldcard raises a dedicated FraudulentChangeOutput exception and refuses the transaction (shared/psbt.py:566). Verification is re-asserted at signing time as well as display time ('We will check pubkey value at the last second, during signing'), closing time-of-check/time-of-use gaps. Every uncertain branch fails toward is_change=False, the safe direction, and the MultisigWallet.disable_checks branch states the principle explicitly: 'Without validation, we have to assume all outputs will be taken from us, and are not really change.' Multisig redeem scripts must match exactly with pubkeys reconstructed from derived paths rather than taken from the PSBT. Input provenance is more defensive than SeedSigner's: a witness_utxo_is_provably_segwit helper exists and both NON_WITNESS_UTXO and WITNESS_UTXO key types are tracked. Worth stating plainly: the firmware that lost ~$89M to an entropy bug has the most conservative transaction-authorization logic of any signer examined here, which is precisely why scope-limited records matter - a project is not 'secure' or 'insecure', it is checked or unchecked in a specific dimension.",
+      "location": "shared/psbt.py:566 (FraudulentChangeOutput), :493-520 (fail-toward-not-change), :761 (witness_utxo_is_provably_segwit)",
+      "cwe": "CWE-345"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "fd813e709c44e51882fd0bba02fbca48c2afa72984cc3688c2b496db98135c6ce0f9e70fd68184dca3c33a012200435867cd11b0b88d2ef3f9464494cf1b55f9"
+  }
+}

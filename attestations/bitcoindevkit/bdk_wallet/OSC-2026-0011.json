@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0011",
+  "target": {
+    "repo": "https://github.com/bitcoindevkit/bdk_wallet",
+    "commit": "fc88144fc8e9532bc23ad490cb2de0445401b8b1",
+    "subpath": "src/wallet/",
+    "release_tag": "HEAD (2026-07-27)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-fable-5",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "705deb7ced4d09587883e8e2dae6acea0a14cc6205a3b3e6a3eec9ce2360ad24",
+    "transcript_uri": "transcripts/OSC-2026-0011.md",
+    "scope": "Transaction-authorization loss-of-funds class at HEAD fc88144f - second lens on the target audited for entropy in OSC-2026-0002. Threat model differs from a hardware signer: bdk_wallet is primarily the CONSTRUCTING wallet holding the descriptor, not a device validating a hostile PSBT. In scope: how output ownership is determined and how change is configured. NOT applicable/in scope: what-you-see-is-what-you-sign (no display), firmware update integrity, QR/USB transport (none). Also not examined: coin selection, fee estimation internals, PSBT signing/finalization.",
+    "duration_minutes": 25,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0011-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No defect found in scope. Output ownership is authoritative rather than asserted: is_mine() resolves a script through the wallet's own SPK index (src/wallet/mod.rs), which is populated by deriving scripts from the wallet's descriptors, so an attacker cannot claim ownership of an output by attaching bip32_derivation metadata to a PSBT. Change behaviour is explicit and caller-controlled rather than implicit - change_policy/ChangeSpendPolicy (tx_builder.rs:590), ChangeForbidden (:573), OnlyChange (:583), drain_to (:125). Recorded with the threat-model caveat that as a constructing wallet holding its own descriptor, bdk_wallet does not face the 'malicious host relabels its address as change' attack in the same shape a hardware signer does.",
+      "location": "src/wallet/mod.rs (is_mine), src/wallet/tx_builder.rs:125,573,583,590",
+      "cwe": "CWE-345"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "f5a2b84ffac82de55bbdb5b6ee21421cd33da30eced22a7edcbf493ef30a6bdbccbc4e8a0360b0b276d36d69d04ad4bfd7cbc8008f5bb9867075aedf9975beb5"
+  }
+}

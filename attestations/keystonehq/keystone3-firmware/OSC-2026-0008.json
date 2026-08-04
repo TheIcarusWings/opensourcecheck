@@ -38,6 +38,6 @@
   "signature": {
     "alg": "nostr-schnorr",
     "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
-    "value": "7a3dd346a14c5eebcbf2d1e5a789d15a8d2bd3d6c7344166d956837ce15c075db784b7f560d138c6f22ec22373fbe9e57ca7f871843f14675c61d3b1dbb83236"
+    "value": "dea2aa20fc516f5aaef496d6c9f02c22381207301b9ae2897d732444d9e1db390233e870fca5bdd33127032ba006acdd7ecc1c632b63eb170c536dfb78e6d61b"
   }
 }

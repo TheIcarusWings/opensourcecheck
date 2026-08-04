@@ -1,0 +1,42 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0018",
+  "target": {
+    "repo": "https://github.com/trezor/python-mnemonic",
+    "commit": "b57a5ad77a981e743f4167ab2f7927a55c1e82a8",
+    "subpath": "src/mnemonic/mnemonic.py",
+    "release_tag": "HEAD (2024-08-27)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "5f7f833f8be21624da53707282ff5e8ce301a1e54a36c2f807705093416536a5",
+    "transcript_uri": "transcripts/OSC-2026-0018.md",
+    "scope": "Independent Grok re-audit of entropy sourcing and BIP-39 correctness in python-mnemonic at b57a5ad7. In scope: RNG in generate(), strength validation, checksum/encoding in to_mnemonic(), PBKDF2 in to_seed(). NOT: wordlists, SLIP-39, language heuristics. Cross-model counterpart to OSC-2026-0006.",
+    "duration_minutes": 15,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0018-F1",
+      "severity": "none-found",
+      "status": "unreviewed",
+      "summary": "No weakness found. generate() uses secrets.token_bytes (os.urandom-backed CSPRNG) with strength restricted to {128,160,192,224,256}. to_mnemonic enforces payload lengths and SHA-256 checksum bits. to_seed uses PBKDF2-HMAC-SHA512 with 2048 rounds and mnemonic+passphrase salt. Agreement with OSC-2026-0006.",
+      "location": "src/mnemonic/mnemonic.py:130-150,196-210,247-254"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "5e08bee73d6af10016b88488e7556c10b1fafa70c2f1d7fb3eeb06ef3f10820d57c8ca948bc1c47284a77d15645b534c117c4d2acacbd31007928c484c5d2fc7"
+  }
+}

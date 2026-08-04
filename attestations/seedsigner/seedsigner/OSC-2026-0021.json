@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0021",
+  "target": {
+    "repo": "https://github.com/SeedSigner/seedsigner",
+    "commit": "1fb2956322ea978428a6a96b955baa93e965c877",
+    "subpath": "src/seedsigner/",
+    "release_tag": "HEAD (2026-07-22)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "7ff0d70ab43f3349a76940b2f49bffdd4fb93710014ec5c4cda99d0ed85e99ef",
+    "transcript_uri": "transcripts/OSC-2026-0021.md",
+    "scope": "Independent Grok re-audit of transaction-authorization class on SeedSigner at 1fb29563. In scope: change re-derivation and whether it gates signing, multisig descriptor verification, input-value provenance, display-vs-signed consistency. NOT: QR/camera, embit internals, entropy, firmware update. Cross-model counterpart to OSC-2026-0009.",
+    "duration_minutes": 40,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0021-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No silent authorization defect substantiated. Single-sig change is re-derived from the device seed and mismatch hard-fails to PSBTAddressVerificationFailedView (psbt_views.py). Multisig with an onboard descriptor uses verify_multisig_output/descriptor.owns and mismatch discards. When no multisig descriptor is loaded, the UI explicitly offers Skip verification (psbt_views.py:364-366,437); that is an intentional user opt-out (no green verified indicator), not a silent bypass — recorded as threat-surface info rather than a defect. Input amounts/fees are taken from PSBT UTXO fields without calling embit InputScope.verify(); for pure segwit BIP-143 binds the signed amount (lying witness_utxo fails broadcast), so this is defense-in-depth for fee display / legacy paths rather than a validated fund-theft bug. Signing uses the same controller.psbt object that was displayed. Broad agreement with OSC-2026-0009 clean-run, with extra notes on the explicit skip path.",
+      "location": "src/seedsigner/views/psbt_views.py:358-446,540-543; src/seedsigner/models/psbt_parser.py:97-113",
+      "cwe": "CWE-345"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "ebca19d8962122823b17d3dd448461fbb8a515eae2ae731488b4fd1b2830a2aecf222b3654d6233f5f4656c0f5621f3f9a2e5644c7a8d9f9d9f26050ced00ae7"
+  }
+}

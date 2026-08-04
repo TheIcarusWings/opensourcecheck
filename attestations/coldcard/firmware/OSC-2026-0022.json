@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0022",
+  "target": {
+    "repo": "https://github.com/Coldcard/firmware",
+    "commit": "c849c4e04a978335937a0fd0c96e76f5bd70bbb6",
+    "subpath": "shared/psbt.py",
+    "release_tag": "HEAD (2026-08-01, post-RNG-fix)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "d8412dbb439d3806510438ae6665165208c767ccc44b8d696e50593b2a106ee5",
+    "transcript_uri": "transcripts/OSC-2026-0022.md",
+    "scope": "Independent Grok re-audit of transaction-authorization class on Coldcard post-RNG-fix HEAD c849c4e0. In scope: change-output validation and failure direction, multisig script reconstruction, input-value provenance. NOT: fee display polish, USB/NFC, firmware update, entropy. Cross-model counterpart to OSC-2026-0010.",
+    "duration_minutes": 40,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0022-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No defect found in scope. Change classification fails closed: FraudulentChangeOutput on path/pubkey mismatch (shared/psbt.py validate ~434-570); multisig reconstructs full script from enrolled xpubs (multisig.py validate_script). sign_it re-checks change paths before producing signatures (~2141-2170). Inputs require UTXO data to sign; non-provably-segwit witness-only amounts do not invent a fake fee. When multisig checks are user-disabled, outputs are forced is_change=False (shown as external), not hidden. Strictest change handling among signers compared in this multi-model pass. Agreement with OSC-2026-0010.",
+      "location": "shared/psbt.py:434-570,761-773,1860-1977,2141-2170; shared/multisig.py:520-625",
+      "cwe": "CWE-345"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "188ea3bec3d50a562c3476f9c6c17e518ba5156ea25c364e3631d9869b0e558bd5d8ad7b7ef0d837b616ca7679d38e62cbe01f39ff0a1d978a080b1980197e97"
+  }
+}

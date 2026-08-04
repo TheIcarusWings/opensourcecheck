@@ -1,0 +1,42 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0014",
+  "target": {
+    "repo": "https://github.com/bitcoindevkit/bdk_wallet",
+    "commit": "fc88144fc8e9532bc23ad490cb2de0445401b8b1",
+    "subpath": "src/keys/",
+    "release_tag": "HEAD (2026-07-27)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "117b7a9e2b9688e46fbf3e1cdd43148406a7ed9feb08d6c8a84b65ebab614a3e",
+    "transcript_uri": "transcripts/OSC-2026-0014.md",
+    "scope": "Independent Grok re-audit of the entropy/RNG path feeding BIP-39 mnemonic and key generation in src/keys/ at commit fc88144f. In scope: CSPRNG selection, CryptoRng bound on generate_with_aux_rand, entropy sizing. NOT in scope: descriptor parsing, PSBT, chain sync, FFI, correctness of upstream rand/bip39 crates. Cross-model counterpart to OSC-2026-0002.",
+    "duration_minutes": 20,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0014-F1",
+      "severity": "none-found",
+      "status": "unreviewed",
+      "summary": "No CSPRNG-selection defects found in BIP-39/key generation. GeneratableKey::generate_with_aux_rand requires impl CryptoRng + RngCore (src/keys/mod.rs:642-644), fills entropy via rng.fill_bytes, then generate_with_entropy. Default generate() uses bitcoin::key::rand::thread_rng() (mod.rs:636). BIP-39 Mnemonic uses Entropy = [u8; 32] and slices to word_count/8 before Mnemonic::from_entropy_in (bip39.rs:138-146). No silent weak-PRNG fallback; type system rejects non-CryptoRng RNGs. Cross-model agreement with OSC-2026-0002.",
+      "location": "src/keys/mod.rs:636-644; src/keys/bip39.rs:138-146"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "f0d7fdda8a560e45bc0c13100aefc4ec30d3ccb6f28d44d66a135ee6a50fa6d82b1959425fab94f89830e0411af84ee10ed35142b5f6d23992890170ab9f58f1"
+  }
+}

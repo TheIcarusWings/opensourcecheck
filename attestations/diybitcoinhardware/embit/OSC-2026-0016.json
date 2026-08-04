@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0016",
+  "target": {
+    "repo": "https://github.com/diybitcoinhardware/embit",
+    "commit": "fff7ffa43f6ce088c5ba22cb3877a122bf01dc96",
+    "subpath": "src/embit/util/",
+    "release_tag": "HEAD (2026-06-02)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "e463ecf5a808d0a77e9ecdb27c2e65b3038171249ecabd7650ab79f04a9b4e55",
+    "transcript_uri": "transcripts/OSC-2026-0016.md",
+    "scope": "Independent Grok re-audit of ECDSA nonce generation and secp256k1 backend selection in embit at fff7ffa4. In scope: native/ctypes/pure-Python backends, low-R grinding, RFC6979, silent backend fallback. NOT: PSBT, descriptors, Liquid, slip39, libsecp256k1 C correctness, caller-supplied seed entropy. Cross-model counterpart to OSC-2026-0004.",
+    "duration_minutes": 25,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0016-F1",
+      "severity": "low",
+      "status": "unreviewed",
+      "summary": "ECDSA nonces remain RFC6979-style on every backend (ctypes uses libsecp256k1 default; pure-Python uses deterministic_k in key.py). Low-R grinding re-signs with counter extra_data. No nonce bias finding. Defense-in-depth note: backend selection in util/secp256k1.py uses bare except fallback from native → ctypes → pure-Python with no log/API flag, so callers cannot tell when the non-constant-time pure-Python path is active. Severity low for nonce uniqueness; side-channel threat model would rate higher. Does not change the core none-found for weak-nonce class that OSC-2026-0004 reported.",
+      "location": "src/embit/util/secp256k1.py:1-76; src/embit/util/key.py:452-472",
+      "cwe": "CWE-338"
+    }
+  ],
+  "verdict": "inconclusive",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "e1d8b964f7ce7cea19d23ea9d7fa2a8f4916b419168d2a2eada74a3c808e875757ea3615e47f2630926713fa34f461df2d05b6a439f23a4601235e2a18901154"
+  }
+}

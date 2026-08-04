@@ -12,9 +12,9 @@
     "model": "claude-fable-5",
     "harness": "claude-code",
     "prompts_ref": "prompts/tx-authorization-audit-v1.md",
-    "transcript_sha256": "ae380d4f040e847cf4ae6399b8631e6da323f09dc7a83f3b954ec3255b85da79",
+    "transcript_sha256": "a6e2321d71fa9a0bde02c75e7db61b8a1c4340fbf24d7258d9d0bf6f64bc3a4f",
     "transcript_uri": "transcripts/OSC-2026-0008.md",
-    "scope": "The transaction-authorization loss-of-funds class at HEAD 31f1fa88 - a SECOND, different lens on a target already audited for entropy in OSC-2026-0005, not a replacement for it. In scope: change-output verification for single-sig and multisig, cosigner substitution, input-value provenance and the SegWit fee attack, fee computation and large-fee warnings. NOT in scope: firmware update/rollback integrity, the C GUI rendering layer, QR/USB transport parsers, entropy (covered separately by OSC-2026-0005), and non-Bitcoin chains.",
+    "scope": "AMENDED 2026-08-04 (original in git history). Transaction-authorization class at HEAD 31f1fa88, examining THE PSBT PATH ONLY: rust/apps/bitcoin/src/transactions/psbt/wrapped_psbt.rs plus shared fee logic in parsed_tx.rs. In scope: change-output verification for single-sig and multisig, cosigner substitution, input-value provenance and the SegWit fee attack, fee computation and large-fee warnings - all on the PSBT path. EXPLICITLY NOT EXAMINED: the legacy raw-transaction (companion-app protobuf) path at transactions/legacy/, which is a separate live dispatch arm (TxData implements TxChecker alongside WrappedPsbt in tx_checker.rs); a later independent audit found a finding there, recorded as OSC-2026-0020. Also not in scope: firmware update/rollback integrity, the C GUI rendering layer, QR/USB transport parsers, entropy (see OSC-2026-0005), and non-Bitcoin chains.",
     "duration_minutes": 45,
     "runs_count": 1
   },
@@ -38,6 +38,6 @@
   "signature": {
     "alg": "nostr-schnorr",
     "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
-    "value": "dea2aa20fc516f5aaef496d6c9f02c22381207301b9ae2897d732444d9e1db390233e870fca5bdd33127032ba006acdd7ecc1c632b63eb170c536dfb78e6d61b"
+    "value": "bc10f1644878486129595ebf65aa0f0eae2214235390238b6ca91bda03818006c6f3ce8be149751ffc687bfed4d56ee46d1035b71e3004d245d3150600adee3e"
   }
 }

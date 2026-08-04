@@ -1,0 +1,51 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0013",
+  "target": {
+    "repo": "https://github.com/Coldcard/firmware",
+    "commit": "bcc2c382a324690a2fcf972c0bac3b79bf923f7b",
+    "subpath": "stm32/COLDCARD/",
+    "release_tag": "pre-fix (parent of ca724637 \"fixes rng\")"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "9487be785e55cbc3d0da0ec8f70001e7e59c30b4f17a2d18d31d6bb3c7a8100a",
+    "transcript_uri": "transcripts/OSC-2026-0013.md",
+    "scope": "Independent Grok re-audit of the publicly disclosed Coldcard seed-entropy vulnerability at the last vulnerable commit (bcc2c382). In scope: entropy/RNG paths feeding BIP-39 seed generation on STM32 builds; TRNG-vs-software-PRNG selection; build-time RNG symbol linkage; SE reseed path on Mk4/Q. NOT in scope: PIN/secure-element auth logic, PSBT handling, USB stack. Cross-model counterpart to Claude run OSC-2026-0001 on the same commit/pack.",
+    "duration_minutes": 35,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0013-F1",
+      "severity": "critical",
+      "status": "unreviewed",
+      "summary": "BIP-39 seed generation draws from a software PRNG (MicroPython Yasmarang) instead of the STM32 hardware TRNG. generate_seed() in shared/seed.py:602-609 calls ngu.random.bytes(32) (comment claims TRNG) then sha256d, which cannot expand entropy. Production boards define MICROPY_HW_ENABLE_RNG (0) (stm32/COLDCARD/mpconfigboard.h:77). Board stm32/COLDCARD/rng.c implements a correct HW TRNG reader as static rng_get_or_fault() feeding random_buffer/ckcc.rng_bytes, but pre-fix does not export a global C symbol rng_get(). With MICROPY_HW_ENABLE_RNG==0, MicroPython ports/stm32/rng.c still provides rng_get() as pyb_rng_yasmarang seeded from chip UID and timers. libngu's CHIP_TRNG_32 maps to external rng_get(); seed generation therefore never samples the STM32 RNG peripheral. Matches the public root-cause of the 2021–2026 Coldcard RNG incident. Post-fix (c849c4e0 tree) exports rng_get, poisons yasmarang, and adds build-time nm checks.",
+      "location": "shared/seed.py:602-609; stm32/COLDCARD/rng.c:61-80; stm32/COLDCARD/mpconfigboard.h:77",
+      "cwe": "CWE-338"
+    },
+    {
+      "ref": "OSC-2026-0013-F2",
+      "severity": "high",
+      "status": "unreviewed",
+      "summary": "On Mk4/Q paths, boot rng_seeding() mixes secure-element RNG bytes then keeps only four bytes via ustruct.unpack('I', n[0:4]) before ngu.random.reseed() (shared/mk4.py:39-49). Combined with F1, residual SE entropy injected into the software PRNG stream used by generate_seed is at most 32 bits. Mk2/Mk3 lack this reseed path entirely. Historical pre-fix firmware only — not a claim about post-fix current releases.",
+      "location": "shared/mk4.py:39-49",
+      "cwe": "CWE-331"
+    }
+  ],
+  "verdict": "inconclusive",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "7d0d0f309899f3eb0ce68af8050e8a193f053d2f0fe9696bbfdd9eb66e35b333a714d3f79388b4d822c0835e71067ee2b3319d1222da0a06097213f9b046e1e1"
+  }
+}

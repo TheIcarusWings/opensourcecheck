@@ -1,0 +1,42 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0019",
+  "target": {
+    "repo": "https://github.com/rust-bitcoin/rust-secp256k1",
+    "commit": "9fc86f756f0cd24a5167c131551b31b748c8cdb3",
+    "subpath": "src/ecdsa/mod.rs",
+    "release_tag": "HEAD (2026-03-01)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "a84c59ac0a8552d15bb69684e3b9cf10c5e6f41b107ff4346fd0b7428ddbfcf4",
+    "transcript_uri": "transcripts/OSC-2026-0019.md",
+    "scope": "Independent Grok re-audit of ECDSA nonce selection in rust-secp256k1 bindings at 9fc86f75. In scope: nonce function selection, optional extra entropy as ndata, silent weak fallback. NOT: libsecp256k1 C correctness, Schnorr, ECDH, keygen. Cross-model counterpart to OSC-2026-0007.",
+    "duration_minutes": 15,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0019-F1",
+      "severity": "none-found",
+      "status": "unreviewed",
+      "summary": "No weakness found. ECDSA signing entry points pin ffi::secp256k1_nonce_function_rfc6979 explicitly (src/ecdsa/mod.rs:249 and :302). Optional noncedata is RFC6979 ndata only. No silent weak-nonce fallback in the Rust ECDSA surface. Agreement with OSC-2026-0007.",
+      "location": "src/ecdsa/mod.rs:228-302"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "cea870f0283428c402250b097c49e1b8cbb3a73467ff348586aee17d6beba3232543d20f0587ab553b7b51bcb9c49c3e8802eaae497154db1d13ee662df4b087"
+  }
+}

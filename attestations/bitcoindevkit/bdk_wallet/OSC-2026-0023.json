@@ -1,0 +1,42 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0023",
+  "target": {
+    "repo": "https://github.com/bitcoindevkit/bdk_wallet",
+    "commit": "fc88144fc8e9532bc23ad490cb2de0445401b8b1",
+    "subpath": "src/wallet/",
+    "release_tag": "HEAD (2026-07-27)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "5110a8a666c6bf7e14148d3553af3cb8596c12c434b1f2de458b6aa7ad629233",
+    "transcript_uri": "transcripts/OSC-2026-0023.md",
+    "scope": "Independent Grok re-audit of transaction-authorization class on bdk_wallet at fc88144f. Threat model: constructing software wallet holding descriptors, not hardware PSBT validator. In scope: output ownership and change configuration. NOT applicable: WYSIWYS display, firmware, QR/USB. Not examined in depth: coin selection, fee estimation internals, PSBT finalization. Cross-model counterpart to OSC-2026-0011.",
+    "duration_minutes": 25,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0023-F1",
+      "severity": "none-found",
+      "status": "unreviewed",
+      "summary": "No defect found under software-wallet construction threat model. Default change derives from the wallet's internal keychain mapping; is_mine resolves via the wallet's own SPK index. Explicit drain_to / change_script overrides are caller-controlled by design (sweep/advanced builders), not silent misrouting. Agreement with OSC-2026-0011.",
+      "location": "src/wallet/mod.rs (create_tx, map_keychain, is_mine); src/wallet/tx_builder.rs"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "31e497cb121aa748d9c0fb032785cdc4b4705f3e6ab107339c6d6e06d81871da6a36ed47570889660b0f6b605a762a5e0d539f264ec1718f87a0612efae7d73d"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0024",
+  "target": {
+    "repo": "https://github.com/diybitcoinhardware/embit",
+    "commit": "fff7ffa43f6ce088c5ba22cb3877a122bf01dc96",
+    "subpath": "src/embit/psbt.py",
+    "release_tag": "HEAD (2026-06-02)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/tx-authorization-audit-v1.md",
+    "transcript_sha256": "4c538d33477fc3bf33be2409b4fb5170d4a97732e17b5990eaaa6dbdcff4a127",
+    "transcript_uri": "transcripts/OSC-2026-0024.md",
+    "scope": "Independent Grok re-audit of transaction-authorization class on embit at fff7ffa4. In scope: whether the library performs change-output verification, fee-attack protection (opt-in?), PSBT parser robustness. NOT: display, firmware, downstream apps. Cross-model counterpart to OSC-2026-0012.",
+    "duration_minutes": 25,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0024-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No defect found; central change check is intentionally absent at the library layer. PSBT.sign_with derives keys and signs without classifying change; Descriptor.owns and examples/change.py document app-side verification. InputScope.verify / PSBT.verify exist for fee-attack protection but are opt-in (sign_with does not require is_verified). Parser rejects bad magic, duplicate keys, and truncated fields. Downstream apps (e.g. SeedSigner) must implement authorization — this record documents the boundary. Agreement with OSC-2026-0012.",
+      "location": "src/embit/psbt.py:226-246,683-704,934-1069; src/embit/descriptor/descriptor.py:204-234"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "05716a8e785dceb04a3733b7ae21775b67a1f8e29ffbadcc1439752bf164bcb74df6122d39cb23e7edb451fc4036a6c85a05145a2d42e095445b3b204e8b1a6f"
+  }
+}

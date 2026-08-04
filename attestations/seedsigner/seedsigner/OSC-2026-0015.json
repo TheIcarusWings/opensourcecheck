@@ -1,0 +1,42 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0015",
+  "target": {
+    "repo": "https://github.com/SeedSigner/seedsigner",
+    "commit": "1fb2956322ea978428a6a96b955baa93e965c877",
+    "subpath": "src/seedsigner/helpers/mnemonic_generation.py",
+    "release_tag": "HEAD (2026-07-22)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "grok-4.5",
+    "harness": "grok-build",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "ecba89447e779377e6a2034b0ceac50f80f9fbaeaf76a5cc1ab0ded067abca11",
+    "transcript_uri": "transcripts/OSC-2026-0015.md",
+    "scope": "Independent Grok re-audit of BIP-39 entropy paths on SeedSigner at 1fb29563: dice/coin (helpers/mnemonic_generation.py) and camera-image entropy (views/tools_views.py). In scope: SHA-256 extraction, dice modulo bias, sizing/truncation, memory hygiene. NOT: PSBT, QR, camera driver, embit/bip39 internals. Cross-model counterpart to OSC-2026-0003.",
+    "duration_minutes": 25,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0015-F1",
+      "severity": "none-found",
+      "status": "unreviewed",
+      "summary": "Entropy extraction is sound. Dice/coin input is hashed as a full string via SHA-256 (generate_mnemonic_from_dice), avoiding classic per-die modulo bias; 50/99 d6 rolls map to ~128/~256 bits then optional 16-byte truncate for 12-word mnemonics. Camera path chains SHA-256 over serial/time/preview/full frames then truncates for 12-word; buffers cleared after use. No weakness found in scope. Agreement with OSC-2026-0003.",
+      "location": "src/seedsigner/helpers/mnemonic_generation.py:64-100; src/seedsigner/views/tools_views.py:148-187"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "4c56c2d380129ea6868a045a503481d5e7c8f098b15ba2168cb7ec9e0c486ca43203ccbce8dea8838094512f2d057dcbc9a9f210bf27a4169101976bb950cefd"
+  }
+}

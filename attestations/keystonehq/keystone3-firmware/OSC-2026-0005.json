@@ -12,9 +12,9 @@
     "model": "claude-fable-5",
     "harness": "claude-code",
     "prompts_ref": "prompts/entropy-rng-audit-v1.md",
-    "transcript_sha256": "0804443d9d0314eb31ea63939f18e8fa45cd9eea2acd42c826cf2d0a9406a9f4",
+    "transcript_sha256": "a0f8d42e23dd7721e4677db6fa89235d85fda82682b1decc24b3359e1ef94780",
     "transcript_uri": "transcripts/OSC-2026-0005.md",
-    "scope": "Seed-entropy generation on a live commercial hardware wallet at HEAD 31f1fa88: GenerateEntropy (src/managers/keystore.c:75), the MH1903 TRNG driver (src/driver/drv_trng.c), and whether raw entropy can leak via debug output. In scope: number and independence of entropy sources, KDF mixing, error handling, debug-gating, buffer clearing. NOT in scope: the rest of the firmware (PSBT/signing, USB/QR transport, secure-element provisioning, bootloader, the vendored external/ libraries), the physical quality of the hardware RNGs themselves, or the Rust components under rust/.",
+    "scope": "AMENDED 2026-08-04 (original in git history). Seed-entropy generation at HEAD 31f1fa88: GenerateEntropy (src/managers/keystore.c:75), the read path of the MH1903 TRNG driver (src/driver/drv_trng.c), and whether raw entropy can leak via debug output. In scope: number and independence of entropy sources, KDF mixing, error handling of the secure-element RNG calls, debug-gating, buffer clearing. EXPLICITLY NOT EXAMINED: the TRNG driver s status/attack-bit handling - TrngGet was read but its treatment of the MH1903 TRNG ATTACK status bit was not reviewed; a later independent audit (OSC-2026-0017) found it is never inspected, which I have since verified. Also not in scope: the rest of the firmware (PSBT/signing, USB/QR transport, secure-element provisioning, bootloader, vendored external/ libraries), the physical quality of the hardware RNGs, and the Rust components under rust/.",
     "duration_minutes": 35,
     "runs_count": 1
   },
@@ -38,6 +38,6 @@
   "signature": {
     "alg": "nostr-schnorr",
     "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
-    "value": "7aad16b88adcafeed89400cd08b98afa153d06396c498f9425a7d7e352f3a4f0fd8007401b9c8bec15065a010b6f1dcc3ce222c7e05329f7ec76902ea2052119"
+    "value": "efb51ae0d2dc5eefc84c8eafcfc9d96f798a029de3fdbc87db2845e8a6828490e2324d39aa3de6cc76dc416a060cad44762024b4bf217d1963fb404ccfb4b85e"
   }
 }

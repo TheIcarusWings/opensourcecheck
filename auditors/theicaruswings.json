@@ -1,8 +1,14 @@
 {
   "id": "theicaruswings",
   "name": "TheIcarusWings",
-  "contact": "https://github.com/TheIcarusWings",
+  "contact": "opensourcecheck@proton.me (github.com/TheIcarusWings)",
   "keys": [
-    { "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5" }
+    {
+      "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5"
+    },
+    {
+      "type": "pgp",
+      "fingerprint": "E57066B50827950634404E4DC17C29E309C078A7"
+    }
   ]
 }

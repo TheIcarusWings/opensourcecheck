@@ -79,3 +79,19 @@ and firmware update integrity.
 Use this for wallets and signers that construct or sign transactions. It does not apply to
 libraries with no transaction logic (a BIP-39 word-list implementation, a curve binding); the
 pack requires the model to say so explicitly rather than inventing findings.
+
+## v2 packs (use these for new audits)
+
+`entropy-rng-audit-v2.md` and `tx-authorization-audit-v2.md` are the current packs. Each is
+its v1 predecessor plus a mandatory **section 0: enumerate every path before concluding**, whose
+canonical text lives in `_path-coverage.md`.
+
+That section exists because of two real errors in this registry, both caught only when a second
+model audited the same target: an auditor read one implementation of a concern, read it
+correctly, and generalised to the whole product. Section 0 requires enumerating candidate
+implementations first, classifying each as examined / not examined / proven unreachable, and
+writing the attestation scope from that table so it names what was *not* covered.
+
+**v1 packs are not deprecated and must not be edited.** Attestations OSC-2026-0001 through 0032
+reference them, and their reproducibility depends on the exact text used at the time. Use v2 for
+new work.

@@ -68,3 +68,14 @@ schema's `findings[]` array (`schema/attestation.schema.json`), to explicitly em
 Raw model output from either pack is `status: unreviewed` until a named human validator
 reproduces and triages it — see the root [README.md](../README.md) and
 [policy/DISCLOSURE.md](../policy/DISCLOSURE.md).
+
+## tx-authorization-audit-v1.md
+
+Audits the **transaction authorization** loss-of-funds class: change-output verification,
+input-amount proof and fee sanity (the historical SegWit fee attack), what-you-see-is-what-you-sign,
+key-material exposure, receive-address and descriptor handling, hostile-input parser robustness,
+and firmware update integrity.
+
+Use this for wallets and signers that construct or sign transactions. It does not apply to
+libraries with no transaction logic (a BIP-39 word-list implementation, a curve binding); the
+pack requires the model to say so explicitly rather than inventing findings.

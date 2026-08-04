@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0004",
+  "target": {
+    "repo": "https://github.com/diybitcoinhardware/embit",
+    "commit": "fff7ffa43f6ce088c5ba22cb3877a122bf01dc96",
+    "subpath": "src/embit/util/",
+    "release_tag": "HEAD (2026-06-02)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-opus-4-8",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "554d9415215473d110e36f9067bc8d8c1b1b05a30a9273c6147f0eafeecbeb64",
+    "transcript_uri": "transcripts/OSC-2026-0004.md",
+    "scope": "Randomness and ECDSA nonce generation in the signing path, and the secp256k1 backend-selection logic, at HEAD fff7ffa4. embit is the shared Bitcoin library under several DIY signers (SeedSigner, Specter-DIY), so this path is high-leverage. In scope: nonce derivation in every backend (native/ctypes/pure-Python), low-R grinding, RFC6979 correctness, and whether a weaker backend can be selected silently. NOT in scope: PSBT parsing, descriptors, Liquid/confidential-transaction code, slip39, the correctness of libsecp256k1 itself, or seed-entropy quality (embit takes entropy from the caller and generates none).",
+    "duration_minutes": 30,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0004-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No weakness found in scope. ECDSA nonces are RFC6979-deterministic in every backend: the native/ctypes path uses libsecp256k1's RFC6979 nonce function, and the pure-Python fallback uses its own RFC6979 deterministic_k (util/key.py:452) with extra_data appended per RFC6979 3.6. Signing therefore has no RNG dependency at all, so the Coldcard failure class (weak RNG silently backing key material) cannot arise here. Low-R grinding (ec.py:218) passes a deterministic counter as extra data rather than randomness, so a grind retry cannot yield a repeated nonce across different messages. Observation (not a defect): the pure-Python fallback is not constant-time (scalar mul branches on secret bits; modinv is extended-Euclidean), it can be selected silently by the import-time fallback chain in util/secp256k1.py, and no runtime indicator of the active backend exists. This does not apply to normal DIY hardware, which runs the native C module under MicroPython; it is recorded because a MicroPython build shipped without the native module would fall through silently, which is structurally the Coldcard lesson. No device was demonstrated taking that path.",
+      "location": "src/embit/ec.py:218 (grinding), src/embit/util/key.py:422,452 (sign_ecdsa, deterministic_k), src/embit/util/secp256k1.py (backend selection)",
+      "cwe": "CWE-208"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "c0cc02d30689ad059cba0972b68e9635519496754cde144008ac9ec015eb85347600f260f23d8869b53e37a14b0498038de25602ad79423627e2feb41bdd03d7"
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "schema": "osc-attestation/v0",
+  "id": "OSC-2026-0005",
+  "target": {
+    "repo": "https://github.com/KeystoneHQ/keystone3-firmware",
+    "commit": "31f1fa88a522f492b9ad6260c4c3e316bd209b32",
+    "subpath": "src/managers/keystore.c",
+    "release_tag": "HEAD (2026-08-04)"
+  },
+  "run": {
+    "date": "2026-08-04",
+    "model": "claude-opus-4-8",
+    "harness": "claude-code",
+    "prompts_ref": "prompts/entropy-rng-audit-v1.md",
+    "transcript_sha256": "2e2a8e8405cb54d3a5bb5785987a42b684a059ed160b8a12182360903eaecd3b",
+    "transcript_uri": "transcripts/OSC-2026-0005.md",
+    "scope": "Seed-entropy generation on a live commercial hardware wallet at HEAD 31f1fa88: GenerateEntropy (src/managers/keystore.c:75), the MH1903 TRNG driver (src/driver/drv_trng.c), and whether raw entropy can leak via debug output. In scope: number and independence of entropy sources, KDF mixing, error handling, debug-gating, buffer clearing. NOT in scope: the rest of the firmware (PSBT/signing, USB/QR transport, secure-element provisioning, bootloader, the vendored external/ libraries), the physical quality of the hardware RNGs themselves, or the Rust components under rust/.",
+    "duration_minutes": 35,
+    "runs_count": 1
+  },
+  "findings": [
+    {
+      "ref": "OSC-2026-0005-F1",
+      "severity": "info",
+      "status": "unreviewed",
+      "summary": "No weakness found in scope; the design specifically resists the Coldcard failure class. Seed entropy is derived from THREE independent hardware sources - the MCU TRNG (SE_GetTRng), the DS28S60 secure element, and the ATECC608B secure element - each folded in via a separate HKDF step with the running value chained forward, and seeded initially from a password-derived salt (HashWithSalt). Degrading or compromising any single source still leaves two independent hardware sources feeding the chain, which is exactly what Coldcard lacked. Raw entropy is never printed in production: every KEYSTORE_PRINT_ARRAY expands to nothing because KEYSTORE_DEBUG is hardcoded to 0 in source (keystore.c:36) rather than set by a build flag, so a build configuration cannot silently enable it - the inverse of the MICROPY_HW_ENABLE_RNG=0 build-flag failure. Working buffers are cleared via CLEAR_ARRAY on all paths. Observation (not a defect): error handling is asymmetric - SE_GetDS28S60Rng and SE_GetAtecc608bRng are checked with CHECK_ERRCODE_BREAK but SE_GetTRng's return value is unchecked, so a silent failure there would mix in a stale buffer. Not exploitable as written, since the two checked sources are still mixed in afterward; noted only because checking all three would make the 'at least N good sources' property explicit rather than incidental.",
+      "location": "src/managers/keystore.c:75 (GenerateEntropy), src/managers/keystore.c:36 (KEYSTORE_DEBUG gate), src/driver/drv_trng.c:12 (TrngGet)",
+      "cwe": "CWE-390"
+    }
+  ],
+  "verdict": "clean-run",
+  "auditor": {
+    "id": "theicaruswings",
+    "name": "TheIcarusWings",
+    "npub": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "contact": "https://github.com/TheIcarusWings"
+  },
+  "signature": {
+    "alg": "nostr-schnorr",
+    "principal": "npub19tzp8lf3klmqj3dz9mz0qnuvjp7uyy9993gmljmyaxs8phztj7wsnujvq5",
+    "value": "b8be930c4fe8c0a76ced24f4879427cb6180e198ff28135df25818d700e47f3ab940796b99aecf7b8752fe9785e319fef8eff075b0370507dad135deca552e5b"
+  }
+}
